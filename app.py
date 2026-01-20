@@ -2,6 +2,29 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+# On utilise un import sécurisé
+try:
+    from streamlit_gsheets import GSheetsConnection
+    HAS_GSHEETS = True
+except ImportError:
+    HAS_GSHEETS = False
+
+# --- CONFIGURATION ---
+st.set_page_config(page_title="Recherche Finance Comportementale", layout="wide")
+
+# Initialisation sécurisée de la connexion
+conn = None
+if HAS_GSHEETS:
+    try:
+        conn = st.connection("gsheets", type=GSheetsConnection)
+    except Exception as e:
+        st.warning("Connexion Google Sheets en attente de configuration dans les Secrets.")
+else:
+    st.error("La bibliothèque st-gsheets-connection n'est pas installée. Vérifiez votre fichier requirements.txt")
+import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.graph_objects as go
 from streamlit_gsheets import GSheetsConnection
 
 # --- CONFIGURATION ---
