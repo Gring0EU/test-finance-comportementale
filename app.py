@@ -27,42 +27,55 @@ with tabs[0]:
     st.session_state.user_data['Nationalite'] = st.text_input("Nationalité")
     st.session_state.user_data['Age'] = st.number_input("Âge", 18, 99, 25)
     st.session_state.user_data['TF'] = st.slider("Transactions/an", 0, 250, 10)
-# --- TAB 2 : BISECTION AMÉLIORÉE (TEST ALPHA) ---
+# --- TAB 2 : BISECTION (VERSION CLAIRE) ---
 with tabs[1]:
-    st.subheader("Mesure de l'Aversion à la Perte")
+    st.markdown("### 🎲 Test de décision : Le Pari")
+    st.write("Indiquez si vous accepteriez le pari suivant dans la vie réelle :")
     
-    # 1. Initialisation d'une perte aléatoire pour éviter l'ancrage (une seule fois au début)
-    if 'valeur_perte' not in st.session_state:
-        # On choisit une perte entre 400 et 600 pour varier les profils
-        st.session_state.valeur_perte = 500.0 
+    # Espace visuel
+    st.write("")
 
     if not st.session_state.finished_la:
-        # Barre de progression spécifique au test
-        progress_la = (st.session_state.step_la - 1) / 5
-        st.progress(progress_la, text=f"Évaluation en cours : Question {st.session_state.step_la} / 5")
+        # Barre de progression discrète
+        st.progress(st.session_state.step_la / 5)
         
-        st.markdown("""
-            ### Choisissez l'option que vous préférez :
-            Imaginez que l'on vous propose le pari suivant. Il n'y a pas de bonne réponse, soyez instinctif.
-        """)
+        # ZONE DE PARI (Simple et contrastée)
+        # On utilise une colonne centrale pour simuler une "carte"
+        _, center_col, _ = st.columns([0.2, 1, 0.2])
+        
+        with center_col:
+            gain_propose = int(st.session_state.current_gain)
+            perte_fixe = 500
+            
+            st.warning(f"""
+            **PROPOSITION :**
+            * 🟢 **50%** de chance de gagner **{gain_propose} €**
+            * 🔴 **50%** de chance de perdre **{perte_fixe} €**
+            """)
+            
+            # Boutons larges et simples
+            col_acc, col_ref = st.columns(2)
+            with col_acc:
+                if st.button("✅ ACCEPTER", use_container_width=True):
+                    st.session_state.bounds[1] = st.session_state.current_gain
+                    st.session_state.current_gain = (st.session_state.bounds[0] + st.session_state.bounds[1]) / 2
+                    st.session_state.step_la += 1
+                    st.rerun()
+            
+            with col_ref:
+                if st.button("❌ REFUSER", use_container_width=True):
+                    st.session_state.bounds[0] = st.session_state.current_gain
+                    st.session_state.current_gain = (st.session_state.bounds[0] + st.session_state.bounds[1]) / 2
+                    st.session_state.step_la += 1
+                    st.rerun()
 
-        # 2. Affichage en colonnes type "Cartes" pour une meilleure UX
-        col_pari, col_choix = st.columns([2, 1])
+    else:
+        # Affichage du résultat final une fois fini
+        l_val = round(st.session_state.current_gain / 500, 2)
+        st.session_state.user_data['LA_Lambda'] = l_val
         
-        with col_pari:
-            st.markdown(f"""
-                <div style="background-color: #ffffff; padding: 20px; border-radius: 10px; border: 2px solid #e6e9ef;">
-                    <h4 style="margin-top:0;">🎲 Pari Proposé (Pile ou Face)</h4>
-                    <p style="font-size: 20px;">🟡 50% de chance de gagner : <b>{int(st.session_state.current_gain)} €</b></p>
-                    <p style="font-size: 20px;">🔴 50% de chance de perdre : <b>{int(st.session_state.valeur_perte)} €</b></p>
-                </div>
-            """, unsafe_allow_html=True)
-        
-        with col_choix:
-            st.write("") # Espacement
-            accept = st.button("✅ J'ACCEPTE LE PARI", use_container_width=True)
-            refuse = st.button("❌ JE REFUSE (0 €)", use_container_width=True)
-
+        st.success(f"**Analyse terminée !** Votre coefficient Lambda est de **{l_val}**.")
+        st.info("Ce score mesure votre sensibilité aux pertes par rapport aux gains.")
         # 3. Logique de Bisection
         if accept:
             # Si accepté, le gain est peut-être "trop" attractif, on cherche la limite inférieure
