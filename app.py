@@ -32,32 +32,81 @@ with tabs[0]:
 # --- TAB 2 : BISECTION ---
 with tabs[1]:
     if not st.session_state.finished_la:
-        st.write(f"Question {st.session_state.step_la}/5")
-        st.info(f"Pari : Gain de {int(st.session_state.current_gain)}€ vs Perte de 500€")
-        c1, c2 = st.columns(2)
-        if c1.button("✅ ACCEPTER"):
+        st.write(f"**Étape {st.session_state.step_la} / 5**")
+        st.info(f"Pari : 50% de gagner {int(st.session_state.current_gain)}€ vs 50% de perdre 500€")
+        if st.button("✅ ACCEPTER"):
             st.session_state.bounds[1] = st.session_state.current_gain
             st.session_state.current_gain = (st.session_state.bounds[0] + st.session_state.bounds[1]) / 2
             st.session_state.step_la += 1
             st.rerun()
-        if c2.button("❌ REFUSER"):
+        if st.button("❌ REFUSER"):
             st.session_state.bounds[0] = st.session_state.current_gain
             st.session_state.current_gain = (st.session_state.bounds[0] + st.session_state.bounds[1]) / 2
             st.session_state.step_la += 1
             st.rerun()
+        if st.session_state.step_la > 5:
+            st.session_state.finished_la = True
+            st.rerun()
     else:
-        l_val = round(st.session_state.current_gain / 500, 2)
-        st.success(f"Coefficient Lambda calculé : {l_val}")
+        l_val = st.session_state.current_gain / 500
+        st.success(f"Lambda : {l_val:.2f}")
         st.session_state.user_data['LA_Lambda'] = l_val
 
-# --- TAB 3 : PSYCHOLOGIE ---
+# --- TAB 3 : PSYCHOLOGIE APPROFONDIE ---
 with tabs[2]:
-    ra = st.select_slider("Aversion au Regret (1-5)", options=[1,2,3,4,5], value=3)
-    rp = st.select_slider("Perception du Risque (1-5)", options=[1,2,3,4,5], value=3)
-    if st.button("Enregistrer les scores"):
-        st.session_state.user_data['RA_Score'] = ra
-        st.session_state.user_data['RP_Score'] = rp
-        st.toast("Scores enregistrés !")
+    st.subheader("🧠 Évaluation des Biais Émotionnels & Cognitifs")
+    st.write("Indiquez votre degré d'accord avec les affirmations suivantes (1 : Pas du tout d'accord, 5 : Tout à fait d'accord)")
+
+    with st.form("likert_form_complete"):
+        # --- SOUS-SECTION : AVERSION AU REGRET (RA) ---
+        st.markdown("#### 1. Aversion au Regret (Regret Aversion)")
+        st.caption("Mesure de la douleur liée aux erreurs de décision passées ou futures.")
+        
+        col_ra1, col_ra2 = st.columns(2)
+        with col_ra1:
+            ra_com = st.select_slider(
+                "Regret de commission : 'Je regrette amèrement quand je vends une action et que son prix monte juste après.'",
+                options=[1, 2, 3, 4, 5], value=3
+            )
+        with col_ra2:
+            ra_om = st.select_slider(
+                "Regret d'omission : 'Je m'en veux terriblement quand je ne saisis pas une opportunité qui s'avère gagnante.'",
+                options=[1, 2, 3, 4, 5], value=3
+            )
+        ra_hold = st.select_slider(
+            "Inertie : 'Je préfère garder un titre perdant plutôt que de le vendre et confirmer mon erreur.'",
+            options=[1, 2, 3, 4, 5], value=3
+        )
+
+        st.divider()
+
+        # --- SOUS-SECTION : PERCEPTION DU RISQUE (RP) ---
+        st.markdown("#### 2. Perception du Risque (Risk Perception)")
+        st.caption("Mesure de votre jugement subjectif sur l'incertitude actuelle des marchés.")
+        
+        col_rp1, col_rp2 = st.columns(2)
+        with col_rp1:
+            rp_uncer = st.select_slider(
+                "Incertitude : 'Le marché boursier est actuellement trop imprévisible pour un investisseur moyen.'",
+                options=[1, 2, 3, 4, 5], value=3
+            )
+        with col_rp2:
+            rp_loss = st.select_slider(
+                "Probabilité de perte : 'La probabilité de subir une perte majeure dans les 6 prochains mois est élevée.'",
+                options=[1, 2, 3, 4, 5], value=3
+            )
+        
+        st.divider()
+
+        if st.form_submit_button("🧪 Calculer et Valider mon Profil Psychologique"):
+            # Calcul des scores composites (Moyennes)
+            # RA Score est la moyenne des 3 items de regret
+            st.session_state.user_data['RA_Score'] = round((ra_com + ra_om + ra_hold) / 3, 2)
+            # RP Score est la moyenne des 2 items de perception du risque
+            st.session_state.user_data['RP_Score'] = round((rp_uncer + rp_loss) / 2, 2)
+            
+            st.success("Profil psychologique enregistré avec succès !")
+            st.info(f"Votre score de Regret : {st.session_state.user_data['RA_Score']}/5 | Votre Perception du Risque : {st.session_state.user_data['RP_Score']}/5")
 
 # --- TAB 4 : ENVOI ---
 with tabs[3]:
