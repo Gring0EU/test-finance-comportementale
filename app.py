@@ -50,22 +50,6 @@ with tabs[1]:
         # Illustration visuelle de la règle (Optionnel mais recommandé)
         st.info("💡 **Le point d'indifférence :** C'est le moment où le gain proposé est juste assez élevé pour que vous acceptiez de risquer la perte.")
 
-        if st.button("🚀 J'ai compris, commencer le test"):
-            st.session_state.rules_read = True
-            st.rerun()
-
-    # Si les règles sont lues, on affiche le test (On reprend ton code précédent ici)
-    else:
-        # --- LOGIQUE DU TEST λ ---
-        st.subheader("🎲 Session de Test en cours")
-        
-        # (Insérer ici le code du test Lambda que nous avons finalisé ensemble)
-        # ...
-        
-        # Bouton pour revenir aux règles si besoin
-        if st.checkbox("Revoir les instructions"):
-            st.session_state.rules_read = False
-            st.rerun()
 with tabs[1]:
     st.subheader("🎲 Mesure de l'Aversion à la Perte")
 
