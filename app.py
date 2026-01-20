@@ -7,17 +7,16 @@ from streamlit_gsheets import GSheetsConnection
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Collecte Recherche", layout="wide")
 
-# Connexion UNIQUE à Google Sheets (Pas de SQL ici)
+# Connexion via st.connection (Méthode officielle)
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Initialisation des variables de session
+# Initialisation
 if 'user_data' not in st.session_state:
     st.session_state.user_data = {}
 if 'step_la' not in st.session_state:
     st.session_state.update({'step_la': 1, 'current_gain': 500.0, 'bounds': [0.0, 2000.0], 'finished_la': False})
 
 st.title("🔬 Étude Finance Comportementale")
-
 tabs = st.tabs(["👤 État Civil", "🎲 Test λ", "🧠 Psychologie", "📤 Envoi"])
 
 # --- TAB 1 : PROFIL ---
@@ -107,57 +106,34 @@ with tabs[2]:
             
             st.success("Profil psychologique enregistré avec succès !")
             st.info(f"Votre score de Regret : {st.session_state.user_data['RA_Score']}/5 | Votre Perception du Risque : {st.session_state.user_data['RP_Score']}/5")
-# --- TAB 4 : ENVOI ---
-import uuid
-from datetime import datetime
-
+# --- TAB 4 : ENVOI (Utilisant les nouvelles explications) ---
 with tabs[3]:
-    user_data = st.session_state.get('user_data', {})
-    
-    # Vérification des clés nécessaires
-    if 'LA_Lambda' in user_data and 'RP_Score' in user_data:
-        try:
-            # Conversion en float pour éviter les erreurs
-            la = float(user_data['LA_Lambda'])
-            rp = float(user_data['RP_Score'])
-            
-            # Préparation de la ligne
-            final_row = pd.DataFrame([user_data])
-            final_row['Interaction'] = round(la * rp, 2)
-            
-            # Ajout d'un ID unique et d'un horodatage
-            final_row['Submission_ID'] = str(uuid.uuid4())
-            final_row['Timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            
-            st.write("### Aperçu avant envoi")
-            st.dataframe(final_row)
-            
-            # Bouton d'envoi
-            if st.button("🚀 ENVOYER AU CHERCHEUR"):
-                try:
-                    # Lecture des données existantes
-                    data = conn.read(worksheet="Sheet1")
-                    
-                    # Si data est vide, créer un DataFrame vide avec mêmes colonnes
-                    if data is None or data.empty:
-                        data = pd.DataFrame(columns=final_row.columns)
-                    elif not isinstance(data, pd.DataFrame):
-                        data = pd.DataFrame(data)
-                    
-                    # Fusionner les données
-                    updated_df = pd.concat([data, final_row], ignore_index=True)
-                    
-                    # Mise à jour de la feuille
-                    conn.update(worksheet="Sheet1", data=updated_df.values.tolist())
-                    
-                    st.balloons()
-                    st.success("✅ Données enregistrées en temps réel !")
-                
-                except Exception as e:
-                    st.error(f"Erreur d'envoi : {e}")
+    if 'LA_Lambda' in st.session_state.user_data and 'RA_Score' in st.session_state.user_data:
+        # On prépare la ligne
+        final_row = pd.DataFrame([st.session_state.user_data])
+        final_row['Interaction'] = round(final_row['LA_Lambda'] * final_row['RP_Score'], 2)
         
-        except ValueError:
-            st.error("Les valeurs LA_Lambda et RP_Score doivent être des nombres.")
-    
+        st.write("### Aperçu avant envoi")
+        st.dataframe(final_row)
+        
+        if st.button("🚀 ENVOYER AU CHERCHEUR"):
+            try:
+                # 1. Lire les données (ttl=0 pour avoir le temps réel sans cache)
+                # On met worksheet="Sheet1" (Vérifie le nom de ton onglet !)
+                data = conn.read(worksheet="Sheet1", ttl=0)
+                
+                # 2. On ajoute la ligne
+                updated_df = pd.concat([data, final_row], ignore_index=True)
+                
+                # 3. On met à jour
+                conn.update(worksheet="Sheet1", data=updated_df)
+                
+                st.balloons()
+                st.success("Données enregistrées avec succès dans le Google Sheet !")
+            except Exception as e:
+                st.error(f"Désolé, l'envoi a échoué : {e}")
+                st.info("Vérifie que le partage du Sheet est bien sur 'ÉDITEUR'.")
     else:
+        st.warning("Complète les étapes précédentes avant d'envoyer.")
         st.warning("Veuillez terminer les tests avant d'envoyer.")
+
