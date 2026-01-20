@@ -86,32 +86,90 @@ with tabs[1]:
         st.success(f"Lambda : {l_val:.2f}")
         st.session_state.user_data['LA_Lambda'] = l_val
 
-# --- TAB 3 : PSYCHOLOGIE ---
+# --- TAB 3 : PSYCHOLOGIE APPROFONDIE ---
 with tabs[2]:
-    with st.form("likert"):
-        ra = st.select_slider("Aversion au Regret", options=[1,2,3,4,5], value=3)
-        rp = st.select_slider("Perception du Risque", options=[1,2,3,4,5], value=3)
-        if st.form_submit_button("Valider"):
-            st.session_state.user_data.update({'RA_Score': ra, 'RP_Score': rp})
+    st.subheader("🧠 Évaluation des Biais Émotionnels & Cognitifs")
+    st.write("Indiquez votre degré d'accord avec les affirmations suivantes (1 : Pas du tout d'accord, 5 : Tout à fait d'accord)")
 
-# --- TAB 4 : ENVOI ---
+    with st.form("likert_form_complete"):
+        # --- SOUS-SECTION : AVERSION AU REGRET (RA) ---
+        st.markdown("#### 1. Aversion au Regret (Regret Aversion)")
+        st.caption("Mesure de la douleur liée aux erreurs de décision passées ou futures.")
+        
+        col_ra1, col_ra2 = st.columns(2)
+        with col_ra1:
+            ra_com = st.select_slider(
+                "Regret de commission : 'Je regrette amèrement quand je vends une action et que son prix monte juste après.'",
+                options=[1, 2, 3, 4, 5], value=3
+            )
+        with col_ra2:
+            ra_om = st.select_slider(
+                "Regret d'omission : 'Je m'en veux terriblement quand je ne saisis pas une opportunité qui s'avère gagnante.'",
+                options=[1, 2, 3, 4, 5], value=3
+            )
+        ra_hold = st.select_slider(
+            "Inertie : 'Je préfère garder un titre perdant plutôt que de le vendre et confirmer mon erreur.'",
+            options=[1, 2, 3, 4, 5], value=3
+        )
+
+        st.divider()
+
+        # --- SOUS-SECTION : PERCEPTION DU RISQUE (RP) ---
+        st.markdown("#### 2. Perception du Risque (Risk Perception)")
+        st.caption("Mesure de votre jugement subjectif sur l'incertitude actuelle des marchés.")
+        
+        col_rp1, col_rp2 = st.columns(2)
+        with col_rp1:
+            rp_uncer = st.select_slider(
+                "Incertitude : 'Le marché boursier est actuellement trop imprévisible pour un investisseur moyen.'",
+                options=[1, 2, 3, 4, 5], value=3
+            )
+        with col_rp2:
+            rp_loss = st.select_slider(
+                "Probabilité de perte : 'La probabilité de subir une perte majeure dans les 6 prochains mois est élevée.'",
+                options=[1, 2, 3, 4, 5], value=3
+            )
+        
+        st.divider()
+
+        if st.form_submit_button("🧪 Calculer et Valider mon Profil Psychologique"):
+            # Calcul des scores composites (Moyennes)
+            # RA Score est la moyenne des 3 items de regret
+            st.session_state.user_data['RA_Score'] = round((ra_com + ra_om + ra_hold) / 3, 2)
+            # RP Score est la moyenne des 2 items de perception du risque
+            st.session_state.user_data['RP_Score'] = round((rp_uncer + rp_loss) / 2, 2)
+            
+            st.success("Profil psychologique enregistré avec succès !")
+            st.info(f"Votre score de Regret : {st.session_state.user_data['RA_Score']}/5 | Votre Perception du Risque : {st.session_state.user_data['RP_Score']}/5")
+
+# --- TAB 4 : ENVOI DES RÉSULTATS ---
 with tabs[3]:
     if 'LA_Lambda' in st.session_state.user_data:
+        # On prépare la ligne à envoyer
         df = pd.DataFrame([st.session_state.user_data])
-        st.table(df)
+        df['Interaction_LA_RP'] = df['LA_Lambda'] * df.get('RP_Score', 0)
         
-        if st.button("🚀 ENVOYER LES DONNÉES"):
+        st.write("### Vos résultats")
+        st.table(df)
+
+        if st.button("🚀 ENVOYER AU CHERCHEUR"):
             if conn is not None:
                 try:
-                    # Tente de lire et mettre à jour
-                    data = conn.read(worksheet="Sheet1")
-                    new_df = pd.concat([data, df], ignore_index=True)
-                    conn.update(worksheet="Sheet1", data=new_df)
-                    st.success("Données envoyées !")
+                    # Charger les données actuelles
+                    # IMPORTANT : Vérifiez que l'onglet s'appelle bien "Sheet1" ou changez ici
+                    existing_data = conn.read(worksheet="Sheet1")
+                    
+                    # Fusionner et envoyer
+                    updated_df = pd.concat([existing_data, df], ignore_index=True)
+                    conn.update(worksheet="Sheet1", data=updated_df)
+                    
                     st.balloons()
+                    st.success("Données enregistrées dans la base centrale !")
                 except Exception as e:
-                    st.error("Erreur d'accès au fichier Google Sheets. Vérifiez l'URL dans les Secrets.")
+                    st.error(f"Erreur technique : {e}")
+                    st.info("Vérifiez que le nom de l'onglet est bien 'Sheet1' et que l'accès est en 'Éditeur'.")
             else:
-                st.error("Connexion impossible. Téléchargez le CSV ci-dessous.")
+                st.error("Connexion impossible : Les Secrets ne sont pas configurés sur Streamlit Cloud.")
         
-        st.download_button("📥 Télécharger CSV (Sécurité)", df.to_csv(index=False).encode('utf-8'), "data.csv")
+        # Sécurité : Toujours proposer le CSV si le cloud échoue
+        st.download_button("📥 Télécharger mon CSV (si l'envoi échoue)", df.to_csv(index=False).encode('utf-8'), "data.csv")
