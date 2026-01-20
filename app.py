@@ -16,7 +16,7 @@ if 'user_data' not in st.session_state:
 if 'step_la' not in st.session_state:
     st.session_state.update({'step_la': 1, 'current_gain': 500.0, 'bounds': [0.0, 2000.0], 'finished_la': False})
 
-st.title("🔬 Étude sur le Profil des Investisseurs")
+st.title("🔬 Étude sur le Profil des Investisseurs MOREL Hugo")
 
 tabs = st.tabs(["👤 État Civil", "🎲 Test λ", "🧠 Psychologie", "📤 Envoi & Export"])
 # --- TAB 1 : PROFIL ---
