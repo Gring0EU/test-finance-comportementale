@@ -21,24 +21,46 @@ st.title("🔬 Étude sur le Profil des Investisseurs")
 tabs = st.tabs(["👤 État Civil", "🎲 Test λ", "🧠 Psychologie", "📤 Envoi & Export"])
 # --- TAB 1 : PROFIL ---
 with tabs[0]:
-    st.session_state.user_data['Nom'] = st.text_input("Nom")
-    st.session_state.user_data['Prenom'] = st.text_input("Prénom")
-    st.session_state.user_data['Genre'] = st.selectbox("Genre", ["Masculin", "Féminin", "Autre"])
-    # On définit l'index par défaut de manière sécurisée
-try:
-    default_index = PAYS_DU_MONDE.index("France")
-except ValueError:
-    default_index = 0  # Si "France" n'est pas trouvé, on prend le premier de la liste
+    st.subheader("Informations Personnelles")
+    
+    # Première ligne : Nom et Prénom
+    col_nom, col_prenom = st.columns(2)
+    with col_nom:
+        st.session_state.user_data['Nom'] = st.text_input("Nom", placeholder="Votre nom")
+    with col_prenom:
+        st.session_state.user_data['Prenom'] = st.text_input("Prénom", placeholder="Votre prénom")
 
-st.session_state.user_data['Nationalite'] = st.selectbox(
-    "Nationalité / Pays de résidence", 
-    options=PAYS_DU_MONDE,
-    index=default_index,
-    help="Tapez les premières lettres pour rechercher votre pays"
-)
-    st.session_state.user_data['Age'] = st.number_input("Âge", 18, 99, 25)
-    st.session_state.user_data['TF'] = st.slider("Transactions/an", 0, 250, 10)
+    # Deuxième ligne : Genre, Nationalité et Âge
+    col_genre, col_pays, col_age = st.columns([1, 2, 1])
+    
+    with col_genre:
+        st.session_state.user_data['Genre'] = st.selectbox(
+            "Genre", 
+            ["Masculin", "Féminin", "Autre"]
+        )
+        
+    with col_pays:
+        # Calcul sécurisé de l'index par défaut (France)
+        try:
+            default_index = PAYS_DU_MONDE.index("France")
+        except (ValueError, NameError):
+            default_index = 0
 
+        st.session_state.user_data['Nationalite'] = st.selectbox(
+            "Nationalité / Pays de résidence", 
+            options=PAYS_DU_MONDE,
+            index=default_index,
+            help="Tapez les premières lettres pour rechercher votre pays"
+        )
+        
+    with col_age:
+        st.session_state.user_data['Age'] = st.number_input("Âge", 18, 99, 25)
+
+    # Dernière ligne : Fréquence de trading
+    st.session_state.user_data['TF'] = st.slider(
+        "Fréquence de trading (Transactions / an)", 
+        0, 250, 12
+    )
 # --- TAB 2 : BISECTION ---
 with tabs[1]:
     if not st.session_state.finished_la:
