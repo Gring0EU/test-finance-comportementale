@@ -27,28 +27,73 @@ with tabs[0]:
     st.session_state.user_data['Nationalite'] = st.text_input("Nationalité")
     st.session_state.user_data['Age'] = st.number_input("Âge", 18, 99, 25)
     st.session_state.user_data['TF'] = st.slider("Transactions/an", 0, 250, 10)
-# --- TAB 2 : BISECTION ---
+# --- TAB 2 : BISECTION AMÉLIORÉE (TEST ALPHA) ---
 with tabs[1]:
+    st.subheader("Mesure de l'Aversion à la Perte")
+    
+    # 1. Initialisation d'une perte aléatoire pour éviter l'ancrage (une seule fois au début)
+    if 'valeur_perte' not in st.session_state:
+        # On choisit une perte entre 400 et 600 pour varier les profils
+        st.session_state.valeur_perte = 500.0 
+
     if not st.session_state.finished_la:
-        st.write(f"**Étape {st.session_state.step_la} / 5**")
-        st.info(f"Pari : 50% de gagner {int(st.session_state.current_gain)}€ vs 50% de perdre 500€")
-        if st.button("✅ ACCEPTER"):
+        # Barre de progression spécifique au test
+        progress_la = (st.session_state.step_la - 1) / 5
+        st.progress(progress_la, text=f"Évaluation en cours : Question {st.session_state.step_la} / 5")
+        
+        st.markdown("""
+            ### Choisissez l'option que vous préférez :
+            Imaginez que l'on vous propose le pari suivant. Il n'y a pas de bonne réponse, soyez instinctif.
+        """)
+
+        # 2. Affichage en colonnes type "Cartes" pour une meilleure UX
+        col_pari, col_choix = st.columns([2, 1])
+        
+        with col_pari:
+            st.markdown(f"""
+                <div style="background-color: #ffffff; padding: 20px; border-radius: 10px; border: 2px solid #e6e9ef;">
+                    <h4 style="margin-top:0;">🎲 Pari Proposé (Pile ou Face)</h4>
+                    <p style="font-size: 20px;">🟡 50% de chance de gagner : <b>{int(st.session_state.current_gain)} €</b></p>
+                    <p style="font-size: 20px;">🔴 50% de chance de perdre : <b>{int(st.session_state.valeur_perte)} €</b></p>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        with col_choix:
+            st.write("") # Espacement
+            accept = st.button("✅ J'ACCEPTE LE PARI", use_container_width=True)
+            refuse = st.button("❌ JE REFUSE (0 €)", use_container_width=True)
+
+        # 3. Logique de Bisection
+        if accept:
+            # Si accepté, le gain est peut-être "trop" attractif, on cherche la limite inférieure
             st.session_state.bounds[1] = st.session_state.current_gain
             st.session_state.current_gain = (st.session_state.bounds[0] + st.session_state.bounds[1]) / 2
             st.session_state.step_la += 1
             st.rerun()
-        if st.button("❌ REFUSER"):
+            
+        if refuse:
+            # Si refusé, le gain n'est pas assez élevé, on cherche la limite supérieure
             st.session_state.bounds[0] = st.session_state.current_gain
             st.session_state.current_gain = (st.session_state.bounds[0] + st.session_state.bounds[1]) / 2
             st.session_state.step_la += 1
             st.rerun()
+
         if st.session_state.step_la > 5:
             st.session_state.finished_la = True
             st.rerun()
+
     else:
-        l_val = st.session_state.current_gain / 500
-        st.success(f"Lambda : {l_val:.2f}")
+        # 4. Calcul final et Feedback
+        l_val = round(st.session_state.current_gain / st.session_state.valeur_perte, 2)
         st.session_state.user_data['LA_Lambda'] = l_val
+        
+        st.success(f"📈 Test terminé ! Votre coefficient de sensibilité aux pertes est estimé à **{l_val}**.")
+        
+        with st.expander("Que signifie ce résultat ?"):
+            st.write(f"""
+                Selon la **Prospect Theory**, cela signifie que la douleur d'une perte est environ **{l_val} fois** plus intense pour vous que le plaisir d'un gain de même montant. 
+                Un score supérieur à 1 indique une aversion à la perte.
+            """)
 
 # --- TAB 3 : PSYCHOLOGIE APPROFONDIE ---
 with tabs[2]:
