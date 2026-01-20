@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 from streamlit_gsheets import GSheetsConnection
 
 # --- CONFIGURATION ---
-st.set_page_config(page_title="Étude Finance Comportementale", layout="wide")
+st.set_page_config(page_title="Étude Finance Comportementale MOREL Hugo", layout="wide")
 
 # Connexion Google Sheets
 conn = st.connection("gsheets", type=GSheetsConnection)
