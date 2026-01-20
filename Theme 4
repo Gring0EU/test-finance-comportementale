@@ -1,0 +1,22 @@
+# --- TAB 2 : BISECTION ---
+with tabs[1]:
+    if not st.session_state.finished_la:
+        st.write(f"**Étape {st.session_state.step_la} / 5**")
+        st.info(f"Pari : 50% de gagner {int(st.session_state.current_gain)}€ vs 50% de perdre 500€")
+        if st.button("✅ ACCEPTER"):
+            st.session_state.bounds[1] = st.session_state.current_gain
+            st.session_state.current_gain = (st.session_state.bounds[0] + st.session_state.bounds[1]) / 2
+            st.session_state.step_la += 1
+            st.rerun()
+        if st.button("❌ REFUSER"):
+            st.session_state.bounds[0] = st.session_state.current_gain
+            st.session_state.current_gain = (st.session_state.bounds[0] + st.session_state.bounds[1]) / 2
+            st.session_state.step_la += 1
+            st.rerun()
+        if st.session_state.step_la > 5:
+            st.session_state.finished_la = True
+            st.rerun()
+    else:
+        l_val = st.session_state.current_gain / 500
+        st.success(f"Lambda : {l_val:.2f}")
+        st.session_state.user_data['LA_Lambda'] = l_val
