@@ -160,57 +160,28 @@ if 'step_la' not in st.session_state:
 st.title("📊 Terminal de Collecte Quantitative")
 
 tabs = st.tabs(["👤 Profil", "🎲 Décision", "🧠 Psychologie", "💾 Sauvegarde"])
-
-# ... (Gardez vos Tab 1, 2 et 3 tels quels) ...
-
-# --- TAB 4 : SAUVEGARDE SQL ---
+# --- TAB 4 : ENVOI ---
 with tabs[3]:
-    if 'LA_Lambda' in st.session_state.user_data and 'RA_Score' in st.session_state.user_data:
-        # Préparation des données finales
-        res = st.session_state.user_data
-        interaction = round(res['LA_Lambda'] * res['RP_Score'], 2)
+    if 'LA_Lambda' in st.session_state.user_data:
+        df_new = pd.DataFrame([st.session_state.user_data])
+        df_new['Interaction_LA_RP'] = round(df_new['LA_Lambda'] * df_new.get('RP_Score', 3), 2)
         
-        st.write("### Synthèse de votre profil")
-        df_display = pd.DataFrame([res])
-        st.table(df_display)
-
-        if st.button("🚀 ENREGISTRER DANS LA BASE DE DONNÉES"):
+        st.dataframe(df_new)
+        
+        if st.button("🚀 ENVOYER AU CHERCHEUR"):
             try:
-                with conn.session as s:
-                    # 1. Création de la table si elle n'existe pas
-                    s.execute("""
-                        CREATE TABLE IF NOT EXISTS responses (
-                            nom TEXT, prenom TEXT, genre TEXT, nationalite TEXT, 
-                            age INTEGER, tf INTEGER, la_lambda REAL, 
-                            ra_score REAL, rp_score REAL, interaction REAL
-                        );
-                    """)
-                    
-                    # 2. Insertion des données
-                    s.execute("""
-                        INSERT INTO responses (nom, prenom, genre, nationalite, age, tf, la_lambda, ra_score, rp_score, interaction)
-                        VALUES (:nom, :prenom, :genre, :nat, :age, :tf, :la, :ra, :rp, :inter);
-                    """, params=dict(
-                        nom=res['Nom'], prenom=res['Prenom'], genre=res['Genre'], 
-                        nat=res['Nationalite'], age=res['Age'], tf=res['TF'], 
-                        la=res['LA_Lambda'], ra=res['RA_Score'], rp=res['RP_Score'], 
-                        inter=interaction
-                    ))
-                    s.commit()
+                # On tente de lire l'onglet Sheet1, sinon Feuille1
+                try:
+                    data = conn.read(worksheet="Sheet1")
+                except:
+                    data = conn.read(worksheet="Feuille1")
+                
+                final_df = pd.concat([data, df_new], ignore_index=True)
+                conn.update(worksheet="Sheet1", data=final_df) # Tente d'écrire
                 st.balloons()
-                st.success("✅ Données enregistrées avec succès dans la base SQL !")
+                st.success("Données enregistrées !")
             except Exception as e:
-                st.error(f"Erreur SQL : {e}")
-
-        # Visualisation des données globales (pour vous, le chercheur)
-        if st.checkbox("Afficher la base complète (Chercheur uniquement)"):
-            try:
-                all_data = conn.query("SELECT * FROM responses")
-                st.dataframe(all_data)
-                # Option pour télécharger toute la base d'un coup
-                csv_total = all_data.to_csv(index=False).encode('utf-8')
-                st.download_button("📥 Télécharger TOUTE la base SQL", csv_total, "base_finale.csv")
-            except:
-                st.info("La base est actuellement vide.")
-    else:
-        st.warning("Veuillez compléter les étapes précédentes.")
+                st.error(f"Erreur d'envoi : {e}")
+                st.write("Vérifiez que votre Google Sheet est bien partagé en 'ÉDITEUR'.")
+        
+        st.download_button("📥 Télécharger CSV de secours", df_new.to_csv(index=False).encode('utf-8'), "data.csv")
