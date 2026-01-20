@@ -24,10 +24,17 @@ with tabs[0]:
     st.session_state.user_data['Nom'] = st.text_input("Nom")
     st.session_state.user_data['Prenom'] = st.text_input("Prénom")
     st.session_state.user_data['Genre'] = st.selectbox("Genre", ["Masculin", "Féminin", "Autre"])
-   st.session_state.user_data['Nationalite'] = st.selectbox(
+    # On définit l'index par défaut de manière sécurisée
+try:
+    default_index = PAYS_DU_MONDE.index("France")
+except ValueError:
+    default_index = 0  # Si "France" n'est pas trouvé, on prend le premier de la liste
+
+st.session_state.user_data['Nationalite'] = st.selectbox(
     "Nationalité / Pays de résidence", 
     options=PAYS_DU_MONDE,
-    index=PAYS_DU_MONDE.index("France") # Définit la France par défaut pour gagner du temps
+    index=default_index,
+    help="Tapez les premières lettres pour rechercher votre pays"
 )
     st.session_state.user_data['Age'] = st.number_input("Âge", 18, 99, 25)
     st.session_state.user_data['TF'] = st.slider("Transactions/an", 0, 250, 10)
