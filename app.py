@@ -24,7 +24,7 @@ with tabs[0]:
     st.session_state.user_data['Nom'] = st.text_input("Nom")
     st.session_state.user_data['Prenom'] = st.text_input("Prénom")
     st.session_state.user_data['Genre'] = st.selectbox("Genre", ["Masculin", "Féminin", "Autre"])
-    st.session_state.user_data['Nationalite'] = st.text_input("Nationalité", ["France", "Belgique", "Suisse", "Canada", "Luxembourg", "Maroc", "Algérie", "Tunisie", "Sénégal", "Etats Unis", "Corée du sud", "Angleterre", "Italie", "Espagne"])
+    st.session_state.user_data['Nationalite'] = st.selectbox("Nationalité", ["France", "Belgique", "Suisse", "Canada", "Luxembourg", "Maroc", "Algérie", "Tunisie", "Sénégal", "Etats Unis", "Corée du sud", "Angleterre", "Italie", "Espagne"])
     st.session_state.user_data['Age'] = st.number_input("Âge", 18, 99, 25)
     st.session_state.user_data['TF'] = st.slider("Transactions/an", 0, 250, 10)
 
