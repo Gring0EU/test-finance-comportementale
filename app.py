@@ -25,13 +25,7 @@ with tabs[0]:
     st.session_state.user_data['Prenom'] = st.text_input("Prénom")
     st.session_state.user_data['Genre'] = st.selectbox("Genre", ["Masculin", "Féminin", "Autre"])
    st.session_state.user_data['Nationalite'] = st.selectbox(
-    "Nationalité / Pays de résidence",
-    options=PAYS_DU_MONDE,
-    index=PAYS_DU_MONDE.index("France") # Définit la France par défaut pour gagner du temps
-)
-# Liste alphabétique complète des pays (standard international)
-PAYS_DU_MONDE = [
-    "Afghanistan", "Afrique du Sud", "Albanie", "Algérie", "Allemagne", "Andorre", "Angola", 
+    "Nationalité / Pays de résidence", ["Afghanistan", "Afrique du Sud", "Albanie", "Algérie", "Allemagne", "Andorre", "Angola", 
     "Antigua-et-Barbuda", "Arabie Saoudite", "Argentine", "Arménie", "Australie", "Autriche", 
     "Azerbaïdjan", "Bahamas", "Bahreïn", "Bangladesh", "Barbade", "Belgique", "Belize", 
     "Bénin", "Bhoutan", "Biélorussie", "Birmanie", "Bolivie", "Bosnie-Herzégovine", "Botswana", 
@@ -58,8 +52,10 @@ PAYS_DU_MONDE = [
     "Sri Lanka", "Suède", "Suisse", "Suriname", "Syrie", "Tadjikistan", "Tanzanie", "Tchad", 
     "Thaïlande", "Timor oriental", "Togo", "Tonga", "Trinité-et-Tobago", "Tunisie", "Turkménistan", 
     "Turquie", "Tuvalu", "Ukraine", "Uruguay", "Vanuatu", "Vatican", "Venezuela", "Vietnam", 
-    "Yémen", "Zambie", "Zimbabwe"
-]
+    "Yémen", "Zambie", "Zimbabwe"]
+    options=PAYS_DU_MONDE,
+    index=PAYS_DU_MONDE.index("France") # Définit la France par défaut pour gagner du temps
+)
     st.session_state.user_data['Age'] = st.number_input("Âge", 18, 99, 25)
     st.session_state.user_data['TF'] = st.slider("Transactions/an", 0, 250, 10)
 
