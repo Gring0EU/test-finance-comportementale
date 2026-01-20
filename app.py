@@ -107,12 +107,14 @@ with tabs[2]:
             
             st.success("Profil psychologique enregistré avec succès !")
             st.info(f"Votre score de Regret : {st.session_state.user_data['RA_Score']}/5 | Votre Perception du Risque : {st.session_state.user_data['RP_Score']}/5")
-
 # --- TAB 4 : ENVOI ---
 with tabs[3]:
-    if 'LA_Lambda' in st.session_state.user_data and 'RA_Score' in st.session_state.user_data:
+    user_data = st.session_state.get('user_data', {})
+    
+    # Vérification des clés
+    if 'LA_Lambda' in user_data and 'RP_Score' in user_data:  # attention à RP_Score
         # Préparation de la ligne
-        final_row = pd.DataFrame([st.session_state.user_data])
+        final_row = pd.DataFrame([user_data])
         final_row['Interaction'] = round(final_row['LA_Lambda'] * final_row['RP_Score'], 2)
         
         st.write("### Aperçu avant envoi")
@@ -120,15 +122,19 @@ with tabs[3]:
         
         if st.button("🚀 ENVOYER AU CHERCHEUR"):
             try:
-                # Lecture de l'existant
-                # Assurez-vous que l'onglet s'appelle bien Sheet1
+                # Lecture des données existantes
                 data = conn.read(worksheet="Sheet1")
                 
-                # Fusion
+                # Vérifier que 'data' est un DataFrame
+                if not isinstance(data, pd.DataFrame):
+                    data = pd.DataFrame(data)
+                
+                # Fusion des DataFrames
                 updated_df = pd.concat([data, final_row], ignore_index=True)
                 
-                # Mise à jour
-                conn.update(worksheet="Sheet1", data=updated_df)
+                # Mise à jour de la feuille
+                conn.update(worksheet="Sheet1", data=updated_df.values.tolist())  # conversion en liste de listes
+                
                 st.balloons()
                 st.success("Données enregistrées en temps réel !")
             except Exception as e:
