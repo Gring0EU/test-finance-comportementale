@@ -19,19 +19,14 @@ if 'step_la' not in st.session_state:
 st.title("🔬 Étude sur le Profil des Investisseurs")
 
 tabs = st.tabs(["👤 État Civil", "🎲 Test λ", "🧠 Psychologie", "📤 Envoi & Export"])
-# --- TAB 1 : PROFIL (Menu déroulant Pays ajouté) ---
+# --- TAB 1 : PROFIL ---
 with tabs[0]:
-    st.subheader("Informations Personnelles")
-    c1, c2 = st.columns(2)
-    with c1:
-        st.session_state.user_data['Nom'] = st.text_input("Nom")
-        st.session_state.user_data['Prenom'] = st.text_input("Prénom")
-        st.session_state.user_data['Age'] = st.number_input("Âge", 18, 99, 25)
-    with c2:
-        st.session_state.user_data['Genre'] = st.selectbox("Genre", ["Masculin", "Féminin", "Autre"])
-        # MENU DÉROULANT PAYS
-        st.session_state.user_data['Nationalite'] = st.selectbox("Pays de résidence", PAYS_LISTE)
-        st.session_state.user_data['TF'] = st.slider("Nombre de transactions par an", 0, 250, 10)
+    st.session_state.user_data['Nom'] = st.text_input("Nom")
+    st.session_state.user_data['Prenom'] = st.text_input("Prénom")
+    st.session_state.user_data['Genre'] = st.selectbox("Genre", ["Masculin", "Féminin", "Autre"])
+    st.session_state.user_data['Nationalite'] = st.text_input("Nationalité")
+    st.session_state.user_data['Age'] = st.number_input("Âge", 18, 99, 25)
+    st.session_state.user_data['TF'] = st.slider("Transactions/an", 0, 250, 10)
 # --- TAB 2 : BISECTION ---
 with tabs[1]:
     if not st.session_state.finished_la:
