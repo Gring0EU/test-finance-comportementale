@@ -27,87 +27,62 @@ with tabs[0]:
     st.session_state.user_data['Nationalite'] = st.text_input("Nationalité")
     st.session_state.user_data['Age'] = st.number_input("Âge", 18, 99, 25)
     st.session_state.user_data['TF'] = st.slider("Transactions/an", 0, 250, 10)
-# --- TAB 2 : BISECTION (VERSION CLAIRE) ---
+# --- TAB 2 : BISECTION (VERSION ROBUSTE & PROPRE) ---
 with tabs[1]:
-    st.markdown("### 🎲 Test de décision : Le Pari")
-    st.write("Indiquez si vous accepteriez le pari suivant dans la vie réelle :")
-    
-    # Espace visuel
-    st.write("")
+    # On s'assure que les variables existent pour éviter les erreurs
+    if 'current_gain' not in st.session_state:
+        st.session_state.current_gain = 500.0
+    if 'bounds' not in st.session_state:
+        st.session_state.bounds = [0.0, 2000.0]
+
+    st.subheader("🎲 Test de décision : Le Pari")
 
     if not st.session_state.finished_la:
-        # Barre de progression discrète
+        # 1. Progression claire
+        st.write(f"Question **{st.session_state.step_la}** sur 5")
         st.progress(st.session_state.step_la / 5)
         
-        # ZONE DE PARI (Simple et contrastée)
-        # On utilise une colonne centrale pour simuler une "carte"
-        _, center_col, _ = st.columns([0.2, 1, 0.2])
-        
-        with center_col:
-            gain_propose = int(st.session_state.current_gain)
-            perte_fixe = 500
-            
-            st.warning(f"""
-            **PROPOSITION :**
-            * 🟢 **50%** de chance de gagner **{gain_propose} €**
-            * 🔴 **50%** de chance de perdre **{perte_fixe} €**
-            """)
-            
-            # Boutons larges et simples
-            col_acc, col_ref = st.columns(2)
-            with col_acc:
-                if st.button("✅ ACCEPTER", use_container_width=True):
-                    st.session_state.bounds[1] = st.session_state.current_gain
-                    st.session_state.current_gain = (st.session_state.bounds[0] + st.session_state.bounds[1]) / 2
-                    st.session_state.step_la += 1
-                    st.rerun()
-            
-            with col_ref:
-                if st.button("❌ REFUSER", use_container_width=True):
-                    st.session_state.bounds[0] = st.session_state.current_gain
-                    st.session_state.current_gain = (st.session_state.bounds[0] + st.session_state.bounds[1]) / 2
-                    st.session_state.step_la += 1
-                    st.rerun()
+        st.write("Indiquez si vous accepteriez le pari suivant :")
 
-    else:
-        # Affichage du résultat final une fois fini
-        l_val = round(st.session_state.current_gain / 500, 2)
-        st.session_state.user_data['LA_Lambda'] = l_val
-        
-        st.success(f"**Analyse terminée !** Votre coefficient Lambda est de **{l_val}**.")
-        st.info("Ce score mesure votre sensibilité aux pertes par rapport aux gains.")
-        # 3. Logique de Bisection
-        if accept:
-            # Si accepté, le gain est peut-être "trop" attractif, on cherche la limite inférieure
-            st.session_state.bounds[1] = st.session_state.current_gain
-            st.session_state.current_gain = (st.session_state.bounds[0] + st.session_state.bounds[1]) / 2
-            st.session_state.step_la += 1
-            st.rerun()
-            
-        if refuse:
-            # Si refusé, le gain n'est pas assez élevé, on cherche la limite supérieure
-            st.session_state.bounds[0] = st.session_state.current_gain
-            st.session_state.current_gain = (st.session_state.bounds[0] + st.session_state.bounds[1]) / 2
-            st.session_state.step_la += 1
-            st.rerun()
+        # 2. Affichage du pari dans un bloc "Info" (Bleu, propre, sans superposition)
+        gain = int(st.session_state.current_gain)
+        st.info(f"""
+        **VOTRE CHOIX :**
+        - 🟢 **Gagner {gain} €** (50% de chance)
+        - 🔴 **Perdre 500 €** (50% de chance)
+        """)
 
+        # 3. Boutons de décision
+        col_acc, col_ref = st.columns(2)
+        
+        with col_acc:
+            if st.button("✅ ACCEPTER", use_container_width=True, key="btn_accept"):
+                # Si accepté, le gain est suffisant, on cherche si un gain plus bas l'est aussi
+                st.session_state.bounds[1] = st.session_state.current_gain
+                st.session_state.current_gain = (st.session_state.bounds[0] + st.session_state.bounds[1]) / 2
+                st.session_state.step_la += 1
+                st.rerun()
+
+        with col_ref:
+            if st.button("❌ REFUSER", use_container_width=True, key="btn_refuse"):
+                # Si refusé, le gain est trop bas, on cherche un gain plus élevé
+                st.session_state.bounds[0] = st.session_state.current_gain
+                st.session_state.current_gain = (st.session_state.bounds[0] + st.session_state.bounds[1]) / 2
+                st.session_state.step_la += 1
+                st.rerun()
+
+        # Vérification de fin de test
         if st.session_state.step_la > 5:
             st.session_state.finished_la = True
             st.rerun()
 
     else:
-        # 4. Calcul final et Feedback
-        l_val = round(st.session_state.current_gain / st.session_state.valeur_perte, 2)
-        st.session_state.user_data['LA_Lambda'] = l_val
+        # 4. Affichage du résultat final
+        lambda_final = round(st.session_state.current_gain / 500, 2)
+        st.session_state.user_data['LA_Lambda'] = lambda_final
         
-        st.success(f"📈 Test terminé ! Votre coefficient de sensibilité aux pertes est estimé à **{l_val}**.")
-        
-        with st.expander("Que signifie ce résultat ?"):
-            st.write(f"""
-                Selon la **Prospect Theory**, cela signifie que la douleur d'une perte est environ **{l_val} fois** plus intense pour vous que le plaisir d'un gain de même montant. 
-                Un score supérieur à 1 indique une aversion à la perte.
-            """)
-
+        st.success(f"📈 **Test terminé !** Votre coefficient Lambda est de **{lambda_final}**.")
+        st.write("Vous pouvez maintenant passer à l'onglet suivant pour les échelles psychologiques.")
 # --- TAB 3 : PSYCHOLOGIE APPROFONDIE ---
 with tabs[2]:
     st.subheader("🧠 Évaluation des Biais Émotionnels & Cognitifs")
