@@ -141,40 +141,76 @@ with tabs[2]:
             
             st.success("Profil psychologique enregistré avec succès !")
             st.info(f"Votre score de Regret : {st.session_state.user_data['RA_Score']}/5 | Votre Perception du Risque : {st.session_state.user_data['RP_Score']}/5")
-# --- TAB 4 : ENVOI DES RÉSULTATS ---
+import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.graph_objects as go
+
+# --- CONFIGURATION CONNEXION SQL ---
+# On crée la connexion comme indiqué dans votre documentation
+conn = st.connection('investor_db', type='sql')
+
+# Initialisation de la session
+if 'step_la' not in st.session_state:
+    st.session_state.update({
+        'step_la': 1, 'current_gain': 500.0, 'bounds': [0.0, 2000.0],
+        'finished_la': False, 'user_data': {}
+    })
+
+st.title("📊 Terminal de Collecte Quantitative")
+
+tabs = st.tabs(["👤 Profil", "🎲 Décision", "🧠 Psychologie", "💾 Sauvegarde"])
+
+# ... (Gardez vos Tab 1, 2 et 3 tels quels) ...
+
+# --- TAB 4 : SAUVEGARDE SQL ---
 with tabs[3]:
     if 'LA_Lambda' in st.session_state.user_data and 'RA_Score' in st.session_state.user_data:
         # Préparation des données finales
-        final_data = st.session_state.user_data.copy()
-        final_data['Interaction_LA_RP'] = round(final_data['LA_Lambda'] * final_data['RP_Score'], 2)
+        res = st.session_state.user_data
+        interaction = round(res['LA_Lambda'] * res['RP_Score'], 2)
         
-        df_to_send = pd.DataFrame([final_data])
-        
-        st.write("### Récapitulatif de vos réponses")
-        st.dataframe(df_to_send)
-        
-        if st.button("🚀 ENVOYER MES DONNÉES AU CHERCHEUR"):
-            if conn:
-                try:
-                    # MÉTHODE ROBUSTE : On écrit directement à la fin du tableau
-                    # On vérifie si le Sheet est vide pour décider d'inclure les headers
-                    conn.create(worksheet="Sheet1", data=df_to_send) 
-                    # Note : Si .create ne marche pas, utilisez .append_row via la librairie gspread
-                    
-                    st.balloons()
-                    st.success("✅ Félicitations ! Vos données ont été ajoutées à la base de recherche.")
-                except Exception as e:
-                    st.error(f"Erreur de transmission : {e}")
-                    st.info("Vérifiez que votre Google Sheet est bien partagé en 'ÉDITEUR' avec 'Tous les utilisateurs disposant du lien'.")
-            else:
-                st.error("L'application n'est pas connectée à Google Sheets. Vérifiez les 'Secrets' sur Streamlit Cloud.")
+        st.write("### Synthèse de votre profil")
+        df_display = pd.DataFrame([res])
+        st.table(df_display)
 
-        # Bouton de secours permanent
-        st.divider()
-        st.write("En cas de problème d'envoi, téléchargez ce fichier et envoyez-le moi :")
-        st.download_button("📥 Télécharger mon profil (CSV)", df_to_send.to_csv(index=False).encode('utf-8'), f"data_{final_data['Nom']}.csv")
+        if st.button("🚀 ENREGISTRER DANS LA BASE DE DONNÉES"):
+            try:
+                with conn.session as s:
+                    # 1. Création de la table si elle n'existe pas
+                    s.execute("""
+                        CREATE TABLE IF NOT EXISTS responses (
+                            nom TEXT, prenom TEXT, genre TEXT, nationalite TEXT, 
+                            age INTEGER, tf INTEGER, la_lambda REAL, 
+                            ra_score REAL, rp_score REAL, interaction REAL
+                        );
+                    """)
+                    
+                    # 2. Insertion des données
+                    s.execute("""
+                        INSERT INTO responses (nom, prenom, genre, nationalite, age, tf, la_lambda, ra_score, rp_score, interaction)
+                        VALUES (:nom, :prenom, :genre, :nat, :age, :tf, :la, :ra, :rp, :inter);
+                    """, params=dict(
+                        nom=res['Nom'], prenom=res['Prenom'], genre=res['Genre'], 
+                        nat=res['Nationalite'], age=res['Age'], tf=res['TF'], 
+                        la=res['LA_Lambda'], ra=res['RA_Score'], rp=res['RP_Score'], 
+                        inter=interaction
+                    ))
+                    s.commit()
+                st.balloons()
+                st.success("✅ Données enregistrées avec succès dans la base SQL !")
+            except Exception as e:
+                st.error(f"Erreur SQL : {e}")
+
+        # Visualisation des données globales (pour vous, le chercheur)
+        if st.checkbox("Afficher la base complète (Chercheur uniquement)"):
+            try:
+                all_data = conn.query("SELECT * FROM responses")
+                st.dataframe(all_data)
+                # Option pour télécharger toute la base d'un coup
+                csv_total = all_data.to_csv(index=False).encode('utf-8')
+                st.download_button("📥 Télécharger TOUTE la base SQL", csv_total, "base_finale.csv")
+            except:
+                st.info("La base est actuellement vide.")
     else:
-        st.warning("⚠️ Veuillez compléter toutes les étapes (Profil, Décision et Échelles) avant d'envoyer.")
-        
-        # Sécurité : Toujours proposer le CSV si le cloud échoue
-        st.download_button("📥 Télécharger mon CSV (si l'envoi échoue)", df.to_csv(index=False).encode('utf-8'), "data.csv")
+        st.warning("Veuillez compléter les étapes précédentes.")
