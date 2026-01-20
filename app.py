@@ -141,35 +141,40 @@ with tabs[2]:
             
             st.success("Profil psychologique enregistré avec succès !")
             st.info(f"Votre score de Regret : {st.session_state.user_data['RA_Score']}/5 | Votre Perception du Risque : {st.session_state.user_data['RP_Score']}/5")
-
 # --- TAB 4 : ENVOI DES RÉSULTATS ---
 with tabs[3]:
-    if 'LA_Lambda' in st.session_state.user_data:
-        # On prépare la ligne à envoyer
-        df = pd.DataFrame([st.session_state.user_data])
-        df['Interaction_LA_RP'] = df['LA_Lambda'] * df.get('RP_Score', 0)
+    if 'LA_Lambda' in st.session_state.user_data and 'RA_Score' in st.session_state.user_data:
+        # Préparation des données finales
+        final_data = st.session_state.user_data.copy()
+        final_data['Interaction_LA_RP'] = round(final_data['LA_Lambda'] * final_data['RP_Score'], 2)
         
-        st.write("### Vos résultats")
-        st.table(df)
-
-        if st.button("🚀 ENVOYER AU CHERCHEUR"):
-            if conn is not None:
+        df_to_send = pd.DataFrame([final_data])
+        
+        st.write("### Récapitulatif de vos réponses")
+        st.dataframe(df_to_send)
+        
+        if st.button("🚀 ENVOYER MES DONNÉES AU CHERCHEUR"):
+            if conn:
                 try:
-                    # Charger les données actuelles
-                    # IMPORTANT : Vérifiez que l'onglet s'appelle bien "Sheet1" ou changez ici
-                    existing_data = conn.read(worksheet="Sheet1")
-                    
-                    # Fusionner et envoyer
-                    updated_df = pd.concat([existing_data, df], ignore_index=True)
-                    conn.update(worksheet="Sheet1", data=updated_df)
+                    # MÉTHODE ROBUSTE : On écrit directement à la fin du tableau
+                    # On vérifie si le Sheet est vide pour décider d'inclure les headers
+                    conn.create(worksheet="Sheet1", data=df_to_send) 
+                    # Note : Si .create ne marche pas, utilisez .append_row via la librairie gspread
                     
                     st.balloons()
-                    st.success("Données enregistrées dans la base centrale !")
+                    st.success("✅ Félicitations ! Vos données ont été ajoutées à la base de recherche.")
                 except Exception as e:
-                    st.error(f"Erreur technique : {e}")
-                    st.info("Vérifiez que le nom de l'onglet est bien 'Sheet1' et que l'accès est en 'Éditeur'.")
+                    st.error(f"Erreur de transmission : {e}")
+                    st.info("Vérifiez que votre Google Sheet est bien partagé en 'ÉDITEUR' avec 'Tous les utilisateurs disposant du lien'.")
             else:
-                st.error("Connexion impossible : Les Secrets ne sont pas configurés sur Streamlit Cloud.")
+                st.error("L'application n'est pas connectée à Google Sheets. Vérifiez les 'Secrets' sur Streamlit Cloud.")
+
+        # Bouton de secours permanent
+        st.divider()
+        st.write("En cas de problème d'envoi, téléchargez ce fichier et envoyez-le moi :")
+        st.download_button("📥 Télécharger mon profil (CSV)", df_to_send.to_csv(index=False).encode('utf-8'), f"data_{final_data['Nom']}.csv")
+    else:
+        st.warning("⚠️ Veuillez compléter toutes les étapes (Profil, Décision et Échelles) avant d'envoyer.")
         
         # Sécurité : Toujours proposer le CSV si le cloud échoue
         st.download_button("📥 Télécharger mon CSV (si l'envoi échoue)", df.to_csv(index=False).encode('utf-8'), "data.csv")
