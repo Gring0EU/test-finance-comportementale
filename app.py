@@ -148,5 +148,4 @@ with tabs[3]:
             )
     else:
         st.warning("⚠️ Veuillez compléter les étapes précédentes (Profil, Test λ et Psychologie) pour débloquer l'envoi.")
-        st.warning("Veuillez terminer les tests avant d'envoyer.")
 
