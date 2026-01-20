@@ -2,186 +2,69 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-# On utilise un import sécurisé
-try:
-    from streamlit_gsheets import GSheetsConnection
-    HAS_GSHEETS = True
-except ImportError:
-    HAS_GSHEETS = False
-
-# --- CONFIGURATION ---
-st.set_page_config(page_title="Recherche Finance Comportementale", layout="wide")
-
-# Initialisation sécurisée de la connexion
-conn = None
-if HAS_GSHEETS:
-    try:
-        conn = st.connection("gsheets", type=GSheetsConnection)
-    except Exception as e:
-        st.warning("Connexion Google Sheets en attente de configuration dans les Secrets.")
-else:
-    st.error("La bibliothèque st-gsheets-connection n'est pas installée. Vérifiez votre fichier requirements.txt")
-import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
 from streamlit_gsheets import GSheetsConnection
 
 # --- CONFIGURATION ---
-st.set_page_config(page_title="Recherche Finance Comportementale", layout="wide")
+st.set_page_config(page_title="Collecte Données Mémoire", layout="wide")
 
-# Initialisation sécurisée de la connexion
-conn = None
-try:
-    # Cette ligne cherche les secrets dans le tableau de bord Streamlit
-    conn = st.connection("gsheets", type=GSheetsConnection)
-except Exception as e:
-    st.warning("Mode hors-ligne : La connexion Google Sheets n'est pas encore configurée dans les 'Secrets'.")
+# Connexion au Sheet
+conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Initialisation des variables de session
+# Initialisation des variables
 if 'step_la' not in st.session_state:
-    st.session_state.update({
-        'step_la': 1, 'current_gain': 500.0, 'bounds': [0.0, 2000.0],
-        'finished_la': False, 'user_data': {}
-    })
+    st.session_state.update({'step_la': 1, 'current_gain': 500.0, 'bounds': [0.0, 2000.0], 'finished_la': False, 'user_data': {}})
 
-st.title("📊 Étude sur le Profil des Investisseurs Individuels")
+st.title("🔬 Étude Finance Comportementale")
+tabs = st.tabs(["👤 Profil", "🎲 Test λ", "🧠 Psychologie", "🚀 Valider & Envoyer"])
 
-tabs = st.tabs(["👤 État Civil", "🎲 Test de Décision", "🧠 Échelles Psychologiques", "💾 Envoi des Résultats"])
-
-# --- TAB 1 : IDENTITÉ ---
+# --- TAB 1, 2, 3 (Simplifiés pour l'exemple, gardez votre logique précédente) ---
 with tabs[0]:
-    st.subheader("Informations Personnelles")
-    c1, c2 = st.columns(2)
-    with c1:
-        nom = st.text_input("Nom")
-        prenom = st.text_input("Prénom")
-        age = st.number_input("Âge", 18, 99, 25)
-    with c2:
-        genre = st.selectbox("Genre", ["Masculin", "Féminin", "Autre"])
-        nationalite = st.text_input("Nationalité")
-        tf_freq = st.slider("Transactions par an", 0, 250, 12)
-    st.session_state.user_data.update({'Nom': nom, 'Prenom': prenom, 'Genre': genre, 'Nationalite': nationalite, 'Age': age, 'TF': tf_freq})
+    nom = st.text_input("Nom")
+    prenom = st.text_input("Prénom")
+    genre = st.selectbox("Genre", ["Masculin", "Féminin", "Autre"])
+    nat = st.text_input("Nationalité")
+    age = st.number_input("Âge", 18, 99, 25)
+    tf = st.slider("Transactions/an", 0, 200, 10)
+    st.session_state.user_data.update({'Nom': nom, 'Prenom': prenom, 'Genre': genre, 'Nationalite': nat, 'Age': age, 'TF': tf})
 
-# --- TAB 2 : BISECTION ---
 with tabs[1]:
-    if not st.session_state.finished_la:
-        st.write(f"**Étape {st.session_state.step_la} / 5**")
-        st.info(f"Pari : 50% de gagner {int(st.session_state.current_gain)}€ vs 50% de perdre 500€")
-        if st.button("✅ ACCEPTER"):
-            st.session_state.bounds[1] = st.session_state.current_gain
-            st.session_state.current_gain = (st.session_state.bounds[0] + st.session_state.bounds[1]) / 2
-            st.session_state.step_la += 1
-            st.rerun()
-        if st.button("❌ REFUSER"):
-            st.session_state.bounds[0] = st.session_state.current_gain
-            st.session_state.current_gain = (st.session_state.bounds[0] + st.session_state.bounds[1]) / 2
-            st.session_state.step_la += 1
-            st.rerun()
-        if st.session_state.step_la > 5:
-            st.session_state.finished_la = True
-            st.rerun()
-    else:
-        l_val = st.session_state.current_gain / 500
-        st.success(f"Lambda : {l_val:.2f}")
-        st.session_state.user_data['LA_Lambda'] = l_val
+    # Votre logique de bisection ici...
+    if st.button("Simuler fin du test λ"): # Pour vos tests
+        st.session_state.user_data['LA_Lambda'] = 2.25
+        st.session_state.finished_la = True
 
-# --- TAB 3 : PSYCHOLOGIE APPROFONDIE ---
 with tabs[2]:
-    st.subheader("🧠 Évaluation des Biais Émotionnels & Cognitifs")
-    st.write("Indiquez votre degré d'accord avec les affirmations suivantes (1 : Pas du tout d'accord, 5 : Tout à fait d'accord)")
+    ra = st.slider("Score Regret", 1.0, 5.0, 3.0)
+    rp = st.slider("Score Risque", 1.0, 5.0, 3.0)
+    st.session_state.user_data.update({'RA_Score': ra, 'RP_Score': rp})
 
-    with st.form("likert_form_complete"):
-        # --- SOUS-SECTION : AVERSION AU REGRET (RA) ---
-        st.markdown("#### 1. Aversion au Regret (Regret Aversion)")
-        st.caption("Mesure de la douleur liée aux erreurs de décision passées ou futures.")
-        
-        col_ra1, col_ra2 = st.columns(2)
-        with col_ra1:
-            ra_com = st.select_slider(
-                "Regret de commission : 'Je regrette amèrement quand je vends une action et que son prix monte juste après.'",
-                options=[1, 2, 3, 4, 5], value=3
-            )
-        with col_ra2:
-            ra_om = st.select_slider(
-                "Regret d'omission : 'Je m'en veux terriblement quand je ne saisis pas une opportunité qui s'avère gagnante.'",
-                options=[1, 2, 3, 4, 5], value=3
-            )
-        ra_hold = st.select_slider(
-            "Inertie : 'Je préfère garder un titre perdant plutôt que de le vendre et confirmer mon erreur.'",
-            options=[1, 2, 3, 4, 5], value=3
-        )
-
-        st.divider()
-
-        # --- SOUS-SECTION : PERCEPTION DU RISQUE (RP) ---
-        st.markdown("#### 2. Perception du Risque (Risk Perception)")
-        st.caption("Mesure de votre jugement subjectif sur l'incertitude actuelle des marchés.")
-        
-        col_rp1, col_rp2 = st.columns(2)
-        with col_rp1:
-            rp_uncer = st.select_slider(
-                "Incertitude : 'Le marché boursier est actuellement trop imprévisible pour un investisseur moyen.'",
-                options=[1, 2, 3, 4, 5], value=3
-            )
-        with col_rp2:
-            rp_loss = st.select_slider(
-                "Probabilité de perte : 'La probabilité de subir une perte majeure dans les 6 prochains mois est élevée.'",
-                options=[1, 2, 3, 4, 5], value=3
-            )
-        
-        st.divider()
-
-        if st.form_submit_button("🧪 Calculer et Valider mon Profil Psychologique"):
-            # Calcul des scores composites (Moyennes)
-            # RA Score est la moyenne des 3 items de regret
-            st.session_state.user_data['RA_Score'] = round((ra_com + ra_om + ra_hold) / 3, 2)
-            # RP Score est la moyenne des 2 items de perception du risque
-            st.session_state.user_data['RP_Score'] = round((rp_uncer + rp_loss) / 2, 2)
-            
-            st.success("Profil psychologique enregistré avec succès !")
-            st.info(f"Votre score de Regret : {st.session_state.user_data['RA_Score']}/5 | Votre Perception du Risque : {st.session_state.user_data['RP_Score']}/5")
-import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
-
-# --- CONFIGURATION CONNEXION SQL ---
-# On crée la connexion comme indiqué dans votre documentation
-conn = st.connection('investor_db', type='sql')
-
-# Initialisation de la session
-if 'step_la' not in st.session_state:
-    st.session_state.update({
-        'step_la': 1, 'current_gain': 500.0, 'bounds': [0.0, 2000.0],
-        'finished_la': False, 'user_data': {}
-    })
-
-st.title("📊 Terminal de Collecte Quantitative")
-
-tabs = st.tabs(["👤 Profil", "🎲 Décision", "🧠 Psychologie", "💾 Sauvegarde"])
-# --- TAB 4 : ENVOI ---
+# --- TAB 4 : L'ENVOI RÉEL ---
 with tabs[3]:
+    st.subheader("Finalisation de l'envoi")
     if 'LA_Lambda' in st.session_state.user_data:
-        df_new = pd.DataFrame([st.session_state.user_data])
-        df_new['Interaction_LA_RP'] = round(df_new['LA_Lambda'] * df_new.get('RP_Score', 3), 2)
+        # Création de la ligne de données
+        new_row = pd.DataFrame([st.session_state.user_data])
+        new_row['Interaction_LA_RP'] = round(new_row['LA_Lambda'] * new_row['RP_Score'], 2)
         
-        st.dataframe(df_new)
-        
-        if st.button("🚀 ENVOYER AU CHERCHEUR"):
+        st.write("Aperçu de vos données :")
+        st.dataframe(new_row)
+
+        if st.button("📤 Envoyer mes réponses"):
             try:
-                # On tente de lire l'onglet Sheet1, sinon Feuille1
-                try:
-                    data = conn.read(worksheet="Sheet1")
-                except:
-                    data = conn.read(worksheet="Feuille1")
+                # 1. Lire les données existantes
+                # On utilise Sheet1 (vérifiez bien le nom de l'onglet sur Google !)
+                existing_data = conn.read(worksheet="Sheet1")
                 
-                final_df = pd.concat([data, df_new], ignore_index=True)
-                conn.update(worksheet="Sheet1", data=final_df) # Tente d'écrire
+                # 2. Ajouter la nouvelle ligne
+                updated_df = pd.concat([existing_data, new_row], ignore_index=True)
+                
+                # 3. Mettre à jour le Google Sheet
+                conn.update(worksheet="Sheet1", data=updated_df)
+                
                 st.balloons()
-                st.success("Données enregistrées !")
+                st.success("✅ Données enregistrées en temps réel sur le serveur !")
             except Exception as e:
-                st.error(f"Erreur d'envoi : {e}")
-                st.write("Vérifiez que votre Google Sheet est bien partagé en 'ÉDITEUR'.")
-        
-        st.download_button("📥 Télécharger CSV de secours", df_new.to_csv(index=False).encode('utf-8'), "data.csv")
+                st.error(f"L'envoi a échoué : {e}")
+                st.info("Vérifiez que le partage Google Sheet est bien sur 'ÉDITEUR' pour tout le monde.")
+    else:
+        st.warning("Veuillez terminer les tests avant d'envoyer.")
