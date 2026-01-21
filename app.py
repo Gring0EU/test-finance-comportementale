@@ -178,41 +178,55 @@ with tabs[2]:
             
             st.success("Profil psychologique enregistré avec succès !")
             st.info(f"Votre score de Regret : {st.session_state.user_data['RA_Score']}/5 | Votre Perception du Risque : {st.session_state.user_data['RP_Score']}/5")
-# --- Thème 4 ---
+import streamlit as st
+import pandas as pd
+import numpy as np
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+# --- FONCTION D'ENVOI ---
 def envoyer_resultats_mail(donnees):
     expediteur = "morel.hugo74190@gmail.com"
     destinataire = "morel.hugo74190@gmail.com"
     
-    # Remplacez les XXXX par les 16 lettres du mot de passe d'application Google
-    # Exemple : "abcd efgh ijkl mnop"
-    mot_de_passe = "ywnz zyio xegb xbw" 
+    # /!\ ATTENTION : Vérifiez bien votre code de 16 lettres sans espaces
+    # Il doit ressembler à : "abcd efgh ijkl mnop"
+    mot_de_passe = "ywnz zyio xegb xbww" # J'ai ajouté un 'w' pour l'exemple (16 lettres)
 
     msg = MIMEMultipart()
     msg['From'] = expediteur
     msg['To'] = destinataire
     msg['Subject'] = f"Résultat Étude - {donnees.get('Nom', 'Anonyme')}"
 
-    corps = "Voici les résultats :\n\n"
+    corps = "Voici les résultats de l'étude :\n\n"
     for cle, valeur in donnees.items():
         corps += f"{cle} : {valeur}\n"
     
     msg.attach(MIMEText(corps, 'plain'))
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(expediteur, mot_de_passe)
-        server.sendmail(expediteur, destinataire, msg.as_string())
-with col_save:
+    # Connexion sécurisée
+    server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+    server.login(expediteur, mot_de_passe)
+    server.sendmail(expediteur, destinataire, msg.as_string())
+    server.quit()
+
+# --- DANS VOTRE TAB 4 (Assurez-vous de l'indentation) ---
+# ... (votre code précédent)
+with tabs[3]: # Onglet Envoi
+    if 'LA_Lambda' in st.session_state.user_data:
+        st.markdown("### 📤 Finalisation")
+        
+        col_save, col_dl = st.columns(2)
+        
+        with col_save:
             st.markdown("#### 1. Sauvegarde en ligne")
             if st.button("🚀 ENVOYER MES RÉSULTATS PAR MAIL"):
                 try:
-                    # On appelle la fonction d'envoi
+                    # On utilise les données stockées dans la session
                     envoyer_resultats_mail(st.session_state.user_data)
                     st.balloons()
-                    st.success("Vos résultats ont été envoyés avec succès à Hugo Morel !")
+                    st.success("Vos résultats ont été envoyés avec succès !")
                 except Exception as e:
-                    st.error(f"Erreur lors de l'envoi : {e}")
-                    st.info("Assurez-vous que le mot de passe d'application est bien configuré.")
+                    st.error(f"Erreur d'envoi : {e}")
+                    st.warning("Vérifiez que votre code Google App Password a bien 16 lettres.")
