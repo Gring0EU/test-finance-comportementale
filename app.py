@@ -170,14 +170,13 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# --- FONCTION D'ENVOI ---
+# --- FONCTION D'ENVOI (Placée en dehors des onglets) ---
 def envoyer_resultats_mail(donnees):
     expediteur = "morel.hugo74190@gmail.com"
     destinataire = "morel.hugo74190@gmail.com"
     
-    # /!\ ATTENTION : Vérifiez bien votre code de 16 lettres sans espaces
-    # Il doit ressembler à : "abcd efgh ijkl mnop"
-    mot_de_passe = "ywnz zyio xegb xbwk" # J'ai ajouté un 'w' pour l'exemple (16 lettres)
+    # Utilisez votre code de 16 lettres ici
+    mot_de_passe = "ywnz zyio xegb xbwk" 
 
     msg = MIMEMultipart()
     msg['From'] = expediteur
@@ -196,93 +195,83 @@ def envoyer_resultats_mail(donnees):
     server.sendmail(expediteur, destinataire, msg.as_string())
     server.quit()
 
-# --- DANS VOTRE TAB 4 (Assurez-vous de l'indentation) ---
-# ... (votre code précédent)
-with tabs[3]: # Onglet Envoi
-    if 'LA_Lambda' in st.session_state.user_data:
-        st.markdown("### 📤 Finalisation")
-        
-        col_save, col_dl = st.columns(2)
-        
-        with col_save:
-            st.markdown("#### 1. Sauvegarde en ligne")
-            if st.button("🚀 ENVOYER MES RÉSULTATS PAR MAIL"):
-                try:
-                    # On utilise les données stockées dans la session
-                    envoyer_resultats_mail(st.session_state.user_data)
-                    st.balloons()
-                    st.success("Vos résultats ont été envoyés avec succès !")
-                except Exception as e:
-                    st.error(f"Erreur d'envoi : {e}")
-                    st.warning("Vérifiez que votre code Google App Password a bien 16 lettres.")
-
-# --- TAB 5 : ENVOI, PRÉVISUALISATION & DOWNLOAD ---
+# --- TAB 4 : ENVOI, PRÉVISUALISATION & DOWNLOAD ---
 with tabs[3]:
     st.subheader("📤 Finalisation de l'étude")
 
     # 1. VÉRIFICATION DES ÉTAPES
-    # On vérifie si les données essentielles sont présentes
-    etape1_ok = st.session_state.user_data.get('Nom') and st.session_state.user_data.get('Prenom')
+    # On vérifie si les données essentielles sont présentes dans session_state
+    nom_saisi = st.session_state.user_data.get('Nom', '').strip()
+    prenom_saisi = st.session_state.user_data.get('Prenom', '').strip()
+    
+    etape1_ok = len(nom_saisi) > 0 and len(prenom_saisi) > 0
     etape2_ok = st.session_state.get('finished_la', False)
     etape3_ok = 'RA_Score' in st.session_state.user_data
 
     st.markdown("### 📋 État de votre progression")
     
     col_check1, col_check2, col_check3 = st.columns(3)
+    
     with col_check1:
         if etape1_ok:
-            st.success("✅ Section 1 : État Civil")
+            st.success("✅ Section 1 : OK")
         else:
-            st.error("❌ Section 1 : État Civil (Incomplet)")
+            st.error("❌ Section 1 : Profil")
             
     with col_check2:
         if etape2_ok:
-            st.success("✅ Section 2 : Test λ")
+            st.success("✅ Section 2 : OK")
         else:
-            st.error("❌ Section 2 : Test λ (Non terminé)")
+            st.error("❌ Section 2 : Test λ")
 
     with col_check3:
         if etape3_ok:
-            st.success("✅ Section 3 : Psychologie")
+            st.success("✅ Section 3 : OK")
         else:
-            st.warning("⚠️ Section 3 : Psychologie (À valider)")
+            st.warning("⚠️ Section 3 : Psycho")
 
     st.divider()
 
-    # 2. AFFICHAGE DU BOUTON D'ENVOI UNIQUEMENT SI TOUT EST OK
+    # 2. AFFICHAGE DU CONTENU DYNAMIQUE
     if etape1_ok and etape2_ok:
-        # Création du DataFrame de prévisualisation
-        final_row = pd.DataFrame([st.session_state.user_data])
+        st.markdown("### 👁️ Prévisualisation")
         
-        st.markdown("### 👁️ Prévisualisation de vos données")
+        # Création du DataFrame pour l'affichage et le CSV
+        final_row = pd.DataFrame([st.session_state.user_data])
         st.dataframe(final_row, use_container_width=True)
 
         col_save, col_dl = st.columns(2)
         
         with col_save:
-            st.markdown("#### Envoi sécurisé")
-            if st.button("🚀 ENVOYER MES RÉSULTATS PAR MAIL"):
+            st.markdown("#### Envoi direct")
+            if st.button("🚀 ENVOYER PAR MAIL", use_container_width=True):
                 try:
                     envoyer_resultats_mail(st.session_state.user_data)
                     st.balloons()
                     st.success("Données transmises avec succès !")
                 except Exception as e:
                     st.error(f"Erreur d'envoi : {e}")
+                    st.info("Note : Vérifiez la validité de votre Google App Password.")
 
         with col_dl:
-            st.markdown("#### Copie personnelle")
+            st.markdown("#### Sauvegarde locale")
             csv_data = final_row.to_csv(index=False).encode('utf-8')
             st.download_button(
-                label="📥 TÉLÉCHARGER MON CSV",
+                label="📥 TÉLÉCHARGER LE CSV",
                 data=csv_data,
-                file_name=f"resultats_{st.session_state.user_data['Nom']}.csv",
-                mime='text/csv'
+                file_name=f"etude_finance_{nom_saisi}.csv",
+                mime='text/csv',
+                use_container_width=True
             )
     else:
-        # Message d'avertissement si les sections 1 et 2 ne sont pas remplies
-        st.warning("⚠️ **Action requise :** Veuillez compléter votre **Nom/Prénom** (Section 1) et terminer le **Test λ** (Section 2) pour débloquer l'envoi des données.")
+        # Message d'avertissement si blocage
+        st.warning("⚠️ **L'envoi est bloqué.**")
         
+        messages_manquants = []
         if not etape1_ok:
-            st.info("👉 Allez dans l'onglet **👤 État Civil** pour renseigner votre identité.")
+            messages_manquants.append("- Veuillez remplir votre **Nom et Prénom** dans l'onglet **État Civil**.")
         if not etape2_ok:
-            st.info("👉 Allez dans l'onglet **🎲 Test λ** pour terminer les 5 questions.")
+            messages_manquants.append("- Veuillez terminer le **Test λ** jusqu'à la fin des 5 questions ou cliquer sur 'Indifférent'.")
+        
+        for msg in messages_manquants:
+            st.info(msg)
