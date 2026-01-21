@@ -184,30 +184,27 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 def envoyer_resultats_mail(donnees):
-    # --- CONFIGURATION ---
     expediteur = "morel.hugo74190@gmail.com"
     destinataire = "morel.hugo74190@gmail.com"
-    # /!\ Ce mot de passe est un "Mot de passe d'application" (16 lettres) généré par Google
-    mot_de_passe = st.secrets["GMAIL_PASSWORD"] 
+    
+    # Remplacez les XXXX par les 16 lettres du mot de passe d'application Google
+    # Exemple : "abcd efgh ijkl mnop"
+    mot_de_passe = "ywnz zyio xegb xbw" 
 
-    # --- CONSTRUCTION DU MESSAGE ---
     msg = MIMEMultipart()
     msg['From'] = expediteur
     msg['To'] = destinataire
-    msg['Subject'] = f"Nouveau résultat étude : {donnees.get('Nom', 'Anonyme')}"
+    msg['Subject'] = f"Résultat Étude - {donnees.get('Nom', 'Anonyme')}"
 
-    # Corps du mail formaté proprement
-    corps = "Voici les résultats de l'étude :\n\n"
+    corps = "Voici les résultats :\n\n"
     for cle, valeur in donnees.items():
-        corps += f"- {cle} : {valeur}\n"
+        corps += f"{cle} : {valeur}\n"
     
     msg.attach(MIMEText(corps, 'plain'))
 
-    # --- CONNEXION ET ENVOI ---
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
         server.login(expediteur, mot_de_passe)
         server.sendmail(expediteur, destinataire, msg.as_string())
-
 with col_save:
             st.markdown("#### 1. Sauvegarde en ligne")
             if st.button("🚀 ENVOYER MES RÉSULTATS PAR MAIL"):
