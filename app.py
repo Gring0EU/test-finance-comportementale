@@ -192,7 +192,7 @@ def envoyer_resultats_mail(donnees):
     
     # /!\ ATTENTION : Vérifiez bien votre code de 16 lettres sans espaces
     # Il doit ressembler à : "abcd efgh ijkl mnop"
-    mot_de_passe = "ywnz zyio xegb xbww" # J'ai ajouté un 'w' pour l'exemple (16 lettres)
+    mot_de_passe = "ywnz zyio xegb xbwk" # J'ai ajouté un 'w' pour l'exemple (16 lettres)
 
     msg = MIMEMultipart()
     msg['From'] = expediteur
