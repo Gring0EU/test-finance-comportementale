@@ -178,26 +178,44 @@ with tabs[2]:
             
             st.success("Profil psychologique enregistré avec succès !")
             st.info(f"Votre score de Regret : {st.session_state.user_data['RA_Score']}/5 | Votre Perception du Risque : {st.session_state.user_data['RP_Score']}/5")
+# --- Thème 4 ---
 import smtplib
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
-def envoyer_mail(donnees):
-    # Configuration (exemple avec Gmail)
-    msg = MIMEText(f"Nouveaux résultats : {donnees}")
-    msg['Subject'] = f"Étude - {donnees['Nom']}"
-    msg['From'] = "votre_email@gmail.com"
-    msg['To'] = "votre_email@gmail.com"
+def envoyer_resultats_mail(donnees):
+    # --- CONFIGURATION ---
+    expediteur = "morel.hugo74190@gmail.com"
+    destinataire = "morel.hugo74190@gmail.com"
+    # /!\ Ce mot de passe est un "Mot de passe d'application" (16 lettres) généré par Google
+    mot_de_passe = st.secrets["GMAIL_PASSWORD"] 
 
-    # Envoi via serveur SMTP
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-        server.login("votre_email@gmail.com", "VOTRE_MOT_DE_PASSE_APPLICATION")
-        server.sendmail(msg['From'], [msg['To']], msg.as_string())
+    # --- CONSTRUCTION DU MESSAGE ---
+    msg = MIMEMultipart()
+    msg['From'] = expediteur
+    msg['To'] = destinataire
+    msg['Subject'] = f"Nouveau résultat étude : {donnees.get('Nom', 'Anonyme')}"
 
-# Dans votre Tab 4 :
-if st.button("🚀 ENVOYER MES RÉSULTATS"):
-    try:
-        envoyer_mail(st.session_state.user_data)
-        st.success("Reçu ! Merci pour votre participation.")
-    except:
-        st.error("Erreur lors de l'envoi.")
+    # Corps du mail formaté proprement
+    corps = "Voici les résultats de l'étude :\n\n"
+    for cle, valeur in donnees.items():
+        corps += f"- {cle} : {valeur}\n"
+    
+    msg.attach(MIMEText(corps, 'plain'))
 
+    # --- CONNEXION ET ENVOI ---
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(expediteur, mot_de_passe)
+        server.sendmail(expediteur, destinataire, msg.as_string())
+
+with col_save:
+            st.markdown("#### 1. Sauvegarde en ligne")
+            if st.button("🚀 ENVOYER MES RÉSULTATS PAR MAIL"):
+                try:
+                    # On appelle la fonction d'envoi
+                    envoyer_resultats_mail(st.session_state.user_data)
+                    st.balloons()
+                    st.success("Vos résultats ont été envoyés avec succès à Hugo Morel !")
+                except Exception as e:
+                    st.error(f"Erreur lors de l'envoi : {e}")
+                    st.info("Assurez-vous que le mot de passe d'application est bien configuré.")
