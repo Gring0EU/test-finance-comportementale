@@ -30,19 +30,27 @@ with tabs[0]:
 # --- TAB 2 : BISECTION AVANCÉE ---
 with tabs[1]:
     # 1. GESTION DES RÈGLES
+with tabs[1]:
+    # Utilisation d'une variable de session pour savoir si les règles sont lues
     if 'rules_read' not in st.session_state:
         st.session_state.rules_read = False
 
     if not st.session_state.rules_read:
         st.subheader("📖 Règles du Test de Décision")
+        
         st.markdown("""
-        Ce test mesure votre **point d'indifférence** : le moment où le gain proposé compenserait juste assez le risque de perte pour que vous hésitiez à jouer.
+        Ce test vise à comprendre comment vous arbitrez entre un **gain potentiel** et une **perte certaine**. 
+        Il n'y a pas de réponse mathématiquement "juste" : la meilleure réponse est celle qui reflète votre instinct.
         
         **Comment ça marche ?**
-        1. Pari **Pile ou Face** (50% chance).
-        2. Vous **Acceptez**, **Refusez** ou vous déclarez **Indifférent**.
-        3. Si vous refusez, le gain proposé augmentera. Si vous acceptez, il diminuera.
+        1. On vous propose un pari de type **Pile ou Face** (50% de chance).
+        2. Vous devez décider si vous **Acceptez** de jouer ou si vous **Refusez**.
+        3. Si vous refusez, vous ne gagnez rien mais vous ne perdez rien (0 €).
+        4. Le test s'ajustera en fonction de vos réponses pour trouver votre **point d'équilibre**.
         """)
+        
+        # Illustration visuelle de la règle (Optionnel mais recommandé)
+        st.info("💡 **Le point d'indifférence :** C'est le moment où le gain proposé est juste assez élevé pour que vous acceptiez de risquer la perte.")
         if st.button("J'ai compris, commencer le test"):
             st.session_state.rules_read = True
             st.rerun()
