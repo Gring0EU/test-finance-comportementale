@@ -27,102 +27,87 @@ with tabs[0]:
     st.session_state.user_data['Nationalite'] = st.text_input("Nationalité")
     st.session_state.user_data['Age'] = st.number_input("Âge", 18, 99, 25)
     st.session_state.user_data['TF'] = st.slider("Transactions/an", 0, 250, 10)
-# --- TAB 2 : BISECTION AVANCÉE (PRÉCISION & ANTI-ANCRAGE) ---
+# --- TAB 2 : BISECTION AVANCÉE ---
 with tabs[1]:
-    # Utilisation d'une variable de session pour savoir si les règles sont lues
+    # 1. GESTION DES RÈGLES
     if 'rules_read' not in st.session_state:
         st.session_state.rules_read = False
 
     if not st.session_state.rules_read:
         st.subheader("📖 Règles du Test de Décision")
-        
         st.markdown("""
-        Ce test vise à comprendre comment vous arbitrez entre un **gain potentiel** et une **perte certaine**. 
-        Il n'y a pas de réponse mathématiquement "juste" : la meilleure réponse est celle qui reflète votre instinct.
+        Ce test mesure votre **point d'indifférence** : le moment où le gain proposé compenserait juste assez le risque de perte pour que vous hésitiez à jouer.
         
         **Comment ça marche ?**
-        1. On vous propose un pari de type **Pile ou Face** (50% de chance).
-        2. Vous devez décider si vous **Acceptez** de jouer ou si vous **Refusez**.
-        3. Si vous refusez, vous ne gagnez rien mais vous ne perdez rien (0 €).
-        4. Le test s'ajustera en fonction de vos réponses pour trouver votre **point d'équilibre**.
+        1. Pari **Pile ou Face** (50% chance).
+        2. Vous **Acceptez**, **Refusez** ou vous déclarez **Indifférent**.
+        3. Si vous refusez, le gain proposé augmentera. Si vous acceptez, il diminuera.
         """)
-        
-        # Illustration visuelle de la règle (Optionnel mais recommandé)
-        st.info("💡 **Le point d'indifférence :** C'est le moment où le gain proposé est juste assez élevé pour que vous acceptiez de risquer la perte.")
+        if st.button("J'ai compris, commencer le test"):
+            st.session_state.rules_read = True
+            st.rerun()
 
-with tabs[1]:
-    st.subheader("🎲 Mesure de l'Aversion à la Perte")
+    # 2. INITIALISATION ET TEST
+    else:
+        st.subheader("🎲 Mesure de l'Aversion à la Perte")
 
-    # 1. INITIALISATION ALÉATOIRE (Une seule fois au début du test)
-    if 'valeur_perte' not in st.session_state:
-        # On tire au sort une base de perte : 200, 500 ou 1000€
-        st.session_state.valeur_perte = np.random.choice([200.0, 500.0, 1000.0])
-        # On ajuste les bornes en fonction de la perte (Gain min = 0, Gain max = 4x la perte)
-        st.session_state.bounds = [0.0, st.session_state.valeur_perte * 4]
-        # Le gain de départ est 1.5x la perte (moyenne théorique de basculement)
-        st.session_state.current_gain = st.session_state.valeur_perte * 1.5
+        # Initialisation si nécessaire
+        if 'valeur_perte' not in st.session_state:
+            st.session_state.valeur_perte = float(np.random.choice([200.0, 500.0, 1000.0]))
+            st.session_state.bounds = [0.0, st.session_state.valeur_perte * 4]
+            st.session_state.current_gain = st.session_state.valeur_perte * 1.5
 
-    if not st.session_state.finished_la:
-        # Barre de progression
-        st.write(f"Question **{st.session_state.step_la}** sur 5")
-        st.progress(st.session_state.step_la / 5)
-        
-        st.write("Accepteriez-vous le pari suivant ?")
-
-        # 2. AFFICHAGE DU PARI (Design épuré)
-        perte = int(st.session_state.valeur_perte)
-        gain = int(st.session_state.current_gain)
-        
-        st.info(f"""
-        **VOTRE SCÉNARIO :**
-        - 🟢 **Gagner {gain} €** (Probabilité : 50%)
-        - 🔴 **Perdre {perte} €** (Probabilité : 50%)
-        """)
-
-        # 3. LES TROIS OPTIONS (Accepter, Indifférent, Refuser)
-        col_acc, col_ind, col_ref = st.columns(3)
-        
-        with col_acc:
-            if st.button("✅ ACCEPTER", use_container_width=True):
-                # Si accepté, le gain est suffisant, on réduit la borne haute
-                st.session_state.bounds[1] = st.session_state.current_gain
-                st.session_state.current_gain = (st.session_state.bounds[0] + st.session_state.bounds[1]) / 2
-                st.session_state.step_la += 1
-                st.rerun()
-
-        with col_ind:
-            if st.button("⚖️ INDIFFÉRENT", use_container_width=True):
-                # Point d'indifférence atteint : on arrête le test ici
+        if not st.session_state.finished_la:
+            # Vérification de sécurité pour ne pas dépasser 5 questions
+            if st.session_state.step_la > 5:
                 st.session_state.finished_la = True
                 st.rerun()
 
-        with col_ref:
-            if st.button("❌ REFUSER", use_container_width=True):
-                # Si refusé, le gain est trop bas, on augmente la borne basse
-                st.session_state.bounds[0] = st.session_state.current_gain
-                st.session_state.current_gain = (st.session_state.bounds[0] + st.session_state.bounds[1]) / 2
-                st.session_state.step_la += 1
-                st.rerun()
+            # Interface de test
+            st.write(f"Question **{st.session_state.step_la}** sur 5")
+            st.progress(min(st.session_state.step_la / 5, 1.0))
+            
+            perte = int(st.session_state.valeur_perte)
+            gain = int(st.session_state.current_gain)
+            
+            st.info(f"**VOTRE SCÉNARIO :** \n🟢 Gagner **{gain} €** (50%)  \n🔴 Perdre **{perte} €** (50%)")
 
-        # Fin automatique après 5 étapes
-        if st.session_state.step_la > 5:
-            st.session_state.finished_la = True
-            st.rerun()
+            col_acc, col_ind, col_ref = st.columns(3)
+            
+            with col_acc:
+                if st.button("✅ ACCEPTER", use_container_width=True):
+                    st.session_state.bounds[1] = st.session_state.current_gain
+                    st.session_state.current_gain = (st.session_state.bounds[0] + st.session_state.bounds[1]) / 2
+                    st.session_state.step_la += 1
+                    st.rerun()
 
-    else:
-        # 4. CALCUL DU LAMBDA (λ)
-        # λ = Gain au point d'indifférence / Perte
-        lambda_final = round(st.session_state.current_gain / st.session_state.valeur_perte, 2)
-        st.session_state.user_data['LA_Lambda'] = lambda_final
-        
-        st.success(f"📈 **Test terminé !**")
-        st.write(f"Votre point d'indifférence se situe à un gain de **{int(st.session_state.current_gain)} €** pour une perte de **{int(st.session_state.valeur_perte)} €**.")
-        st.metric(label="Votre Coefficient Lambda (λ)", value=lambda_final)
-        
-        if lambda_final > 1.0:
-            st.write("Cela indique une certaine aversion à la perte.")
+            with col_ind:
+                if st.button("⚖️ INDIFFÉRENT", use_container_width=True):
+                    st.session_state.finished_la = True
+                    st.rerun()
+
+            with col_ref:
+                if st.button("❌ REFUSER", use_container_width=True):
+                    st.session_state.bounds[0] = st.session_state.current_gain
+                    st.session_state.current_gain = (st.session_state.bounds[0] + st.session_state.bounds[1]) / 2
+                    st.session_state.step_la += 1
+                    st.rerun()
+
         else:
-            st.write("Cela indique une neutralité ou une recherche de risque.")
+            # 3. AFFICHAGE DES RÉSULTATS
+            lambda_final = round(st.session_state.current_gain / st.session_state.valeur_perte, 2)
+            st.session_state.user_data['LA_Lambda'] = lambda_final
+            
+            st.success("📈 **Test terminé !**")
+            st.metric(label="Votre Coefficient Lambda (λ)", value=lambda_final)
+            
+            st.write(f"Votre point d'indifférence se situe à un gain de **{int(st.session_state.current_gain)} €** pour une perte de **{int(st.session_state.valeur_perte)} €**.")
+            
+            if st.button("🔄 Recommencer le test"):
+                # Reset spécifique pour le test λ
+                for key in ['step_la', 'valeur_perte', 'bounds', 'current_gain', 'finished_la']:
+                    if key in st.session_state: del st.session_state[key]
+                st.rerun()
 # --- TAB 3 : PSYCHOLOGIE APPROFONDIE ---
 with tabs[2]:
     st.subheader("🧠 Évaluation des Biais Émotionnels & Cognitifs")
