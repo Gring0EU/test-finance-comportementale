@@ -178,47 +178,26 @@ with tabs[2]:
             
             st.success("Profil psychologique enregistré avec succès !")
             st.info(f"Votre score de Regret : {st.session_state.user_data['RA_Score']}/5 | Votre Perception du Risque : {st.session_state.user_data['RP_Score']}/5")
-# --- TAB 4 : ENVOI, PRÉVISUALISATION & DOWNLOAD ---
-with tabs[3]:
-    if 'LA_Lambda' in st.session_state.user_data and 'RA_Score' in st.session_state.user_data:
-        # Création du DataFrame de prévisualisation
-        final_row = pd.DataFrame([st.session_state.user_data])
-        final_row['Interaction'] = round(final_row['LA_Lambda'] * final_row['RP_Score'], 2)
-        
-        st.markdown("### 👁️ Prévisualisation de vos données")
-        st.write("Voici les informations qui seront transmises au chercheur :")
-        st.dataframe(final_row, use_container_width=True)
+import smtplib
+from email.mime.text import MIMEText
 
-        st.divider()
-        
-        col_save, col_dl = st.columns(2)
-        
-        with col_save:
-            st.markdown("#### 1. Sauvegarde en ligne")
-            if st.button("🚀 ENVOYER AU GOOGLE SHEET"):
-                try:
-                    # Lecture sans cache (ttl=0)
-                    data = conn.read(worksheet="Sheet1", ttl=0)
-                    # Ajout de la ligne
-                    updated_df = pd.concat([data, final_row], ignore_index=True)
-                    # Mise à jour du Google Sheet
-                    conn.update(worksheet="Sheet1", data=updated_df)
-                    st.balloons()
-                    st.success("Données enregistrées avec succès !")
-                except Exception as e:
-                    st.error(f"Erreur d'envoi : {e}")
+def envoyer_mail(donnees):
+    # Configuration (exemple avec Gmail)
+    msg = MIMEText(f"Nouveaux résultats : {donnees}")
+    msg['Subject'] = f"Étude - {donnees['Nom']}"
+    msg['From'] = "votre_email@gmail.com"
+    msg['To'] = "votre_email@gmail.com"
 
-        with col_dl:
-            st.markdown("#### 2. Sauvegarde locale")
-            # Fonction de conversion CSV
-            csv_data = final_row.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label="📥 TÉLÉCHARGER MON CSV",
-                data=csv_data,
-                file_name=f"resultats_{st.session_state.user_data['Nom']}.csv",
-                mime='text/csv',
-                help="Téléchargez vos résultats directement sur votre ordinateur."
-            )
-    else:
-        st.warning("⚠️ Veuillez compléter les étapes précédentes (Profil, Test λ et Psychologie) pour débloquer l'envoi.")
+    # Envoi via serveur SMTP
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+        server.login("votre_email@gmail.com", "VOTRE_MOT_DE_PASSE_APPLICATION")
+        server.sendmail(msg['From'], [msg['To']], msg.as_string())
+
+# Dans votre Tab 4 :
+if st.button("🚀 ENVOYER MES RÉSULTATS"):
+    try:
+        envoyer_mail(st.session_state.user_data)
+        st.success("Reçu ! Merci pour votre participation.")
+    except:
+        st.error("Erreur lors de l'envoi.")
 
