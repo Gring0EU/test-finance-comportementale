@@ -30,8 +30,6 @@ with tabs[0]:
 # --- TAB 2 : BISECTION AVANCÉE ---
 with tabs[1]:
     # 1. GESTION DES RÈGLES
-with tabs[1]:
-    # Utilisation d'une variable de session pour savoir si les règles sont lues
     if 'rules_read' not in st.session_state:
         st.session_state.rules_read = False
 
@@ -49,24 +47,26 @@ with tabs[1]:
         4. Le test s'ajustera en fonction de vos réponses pour trouver votre **point d'équilibre**.
         """)
         
-        # Illustration visuelle de la règle (Optionnel mais recommandé)
         st.info("💡 **Le point d'indifférence :** C'est le moment où le gain proposé est juste assez élevé pour que vous acceptiez de risquer la perte.")
-        if st.button("J'ai compris, commencer le test"):
+        
+        if st.button("🚀 J'ai compris, commencer le test"):
             st.session_state.rules_read = True
             st.rerun()
 
-    # 2. INITIALISATION ET TEST
+    # 2. INITIALISATION ET LOGIQUE DU TEST
     else:
         st.subheader("🎲 Mesure de l'Aversion à la Perte")
 
-        # Initialisation si nécessaire
+        # Initialisation des variables du test si elles n'existent pas
         if 'valeur_perte' not in st.session_state:
             st.session_state.valeur_perte = float(np.random.choice([200.0, 500.0, 1000.0]))
             st.session_state.bounds = [0.0, st.session_state.valeur_perte * 4]
             st.session_state.current_gain = st.session_state.valeur_perte * 1.5
+            st.session_state.step_la = 1
+            st.session_state.finished_la = False
 
         if not st.session_state.finished_la:
-            # Vérification de sécurité pour ne pas dépasser 5 questions
+            # Sécurité : fin après 5 questions
             if st.session_state.step_la > 5:
                 st.session_state.finished_la = True
                 st.rerun()
@@ -78,7 +78,7 @@ with tabs[1]:
             perte = int(st.session_state.valeur_perte)
             gain = int(st.session_state.current_gain)
             
-            st.info(f"**VOTRE SCÉNARIO :** \n🟢 Gagner **{gain} €** (50%)  \n🔴 Perdre **{perte} €** (50%)")
+            st.info(f"**VOTRE SCÉNARIO :** \n\n🟢 Gagner **{gain} €** (50%) \n\n🔴 Perdre **{perte} €** (50%)")
 
             col_acc, col_ind, col_ref = st.columns(3)
             
@@ -111,10 +111,12 @@ with tabs[1]:
             
             st.write(f"Votre point d'indifférence se situe à un gain de **{int(st.session_state.current_gain)} €** pour une perte de **{int(st.session_state.valeur_perte)} €**.")
             
+            # Bouton pour recommencer
             if st.button("🔄 Recommencer le test"):
-                # Reset spécifique pour le test λ
-                for key in ['step_la', 'valeur_perte', 'bounds', 'current_gain', 'finished_la']:
-                    if key in st.session_state: del st.session_state[key]
+                keys_to_reset = ['step_la', 'valeur_perte', 'bounds', 'current_gain', 'finished_la', 'rules_read']
+                for key in keys_to_reset:
+                    if key in st.session_state:
+                        del st.session_state[key]
                 st.rerun()
 # --- TAB 3 : PSYCHOLOGIE APPROFONDIE ---
 with tabs[2]:
