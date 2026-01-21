@@ -215,3 +215,74 @@ with tabs[3]: # Onglet Envoi
                 except Exception as e:
                     st.error(f"Erreur d'envoi : {e}")
                     st.warning("Vérifiez que votre code Google App Password a bien 16 lettres.")
+
+# --- TAB 5 : ENVOI, PRÉVISUALISATION & DOWNLOAD ---
+with tabs[3]:
+    st.subheader("📤 Finalisation de l'étude")
+
+    # 1. VÉRIFICATION DES ÉTAPES
+    # On vérifie si les données essentielles sont présentes
+    etape1_ok = st.session_state.user_data.get('Nom') and st.session_state.user_data.get('Prenom')
+    etape2_ok = st.session_state.get('finished_la', False)
+    etape3_ok = 'RA_Score' in st.session_state.user_data
+
+    st.markdown("### 📋 État de votre progression")
+    
+    col_check1, col_check2, col_check3 = st.columns(3)
+    with col_check1:
+        if etape1_ok:
+            st.success("✅ Section 1 : État Civil")
+        else:
+            st.error("❌ Section 1 : État Civil (Incomplet)")
+            
+    with col_check2:
+        if etape2_ok:
+            st.success("✅ Section 2 : Test λ")
+        else:
+            st.error("❌ Section 2 : Test λ (Non terminé)")
+
+    with col_check3:
+        if etape3_ok:
+            st.success("✅ Section 3 : Psychologie")
+        else:
+            st.warning("⚠️ Section 3 : Psychologie (À valider)")
+
+    st.divider()
+
+    # 2. AFFICHAGE DU BOUTON D'ENVOI UNIQUEMENT SI TOUT EST OK
+    if etape1_ok and etape2_ok:
+        # Création du DataFrame de prévisualisation
+        final_row = pd.DataFrame([st.session_state.user_data])
+        
+        st.markdown("### 👁️ Prévisualisation de vos données")
+        st.dataframe(final_row, use_container_width=True)
+
+        col_save, col_dl = st.columns(2)
+        
+        with col_save:
+            st.markdown("#### Envoi sécurisé")
+            if st.button("🚀 ENVOYER MES RÉSULTATS PAR MAIL"):
+                try:
+                    envoyer_resultats_mail(st.session_state.user_data)
+                    st.balloons()
+                    st.success("Données transmises avec succès !")
+                except Exception as e:
+                    st.error(f"Erreur d'envoi : {e}")
+
+        with col_dl:
+            st.markdown("#### Copie personnelle")
+            csv_data = final_row.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 TÉLÉCHARGER MON CSV",
+                data=csv_data,
+                file_name=f"resultats_{st.session_state.user_data['Nom']}.csv",
+                mime='text/csv'
+            )
+    else:
+        # Message d'avertissement si les sections 1 et 2 ne sont pas remplies
+        st.warning("⚠️ **Action requise :** Veuillez compléter votre **Nom/Prénom** (Section 1) et terminer le **Test λ** (Section 2) pour débloquer l'envoi des données.")
+        
+        if not etape1_ok:
+            st.info("👉 Allez dans l'onglet **👤 État Civil** pour renseigner votre identité.")
+        if not etape2_ok:
+            st.info("👉 Allez dans l'onglet **🎲 Test λ** pour terminer les 5 questions.")
