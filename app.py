@@ -173,59 +173,59 @@ with tabs[2]:
             
             st.success("Profil psychologique enregistré avec succès !")
             st.info(f"Votre score de Regret : {st.session_state.user_data['RA_Score']}/5 | Votre Perception du Risque : {st.session_state.user_data['RP_Score']}/5")
-import streamlit as st
-import pandas as pd
-import numpy as np
 import smtplib
+import io
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 
-# --- FONCTION D'ENVOI (Placée en dehors des onglets) ---
 def envoyer_resultats_mail(donnees):
     expediteur = "morel.hugo74190@gmail.com"
     destinataire = "morel.hugo74190@gmail.com"
     mot_de_passe = "ywnz zyio xegb xbwk" 
 
-    msg = MIMEMultipart("alternative")
+    # 1. Création du message de base
+    msg = MIMEMultipart()
     msg['From'] = expediteur
     msg['To'] = destinataire
-    msg['Subject'] = f"📊 Nouveau Résultat Étude - {donnees.get('Nom', 'Anonyme')}"
+    msg['Subject'] = f"📊 Résultat Étude - {donnees.get('Nom', 'Anonyme')}"
 
-    # Construction du tableau HTML pour le mail
+    # 2. Création du tableau HTML pour le corps du mail
     lignes_tableau = ""
     for cle, valeur in donnees.items():
-        lignes_tableau += f"""
-        <tr>
-            <td style="border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2;"><b>{cle}</b></td>
-            <td style="border: 1px solid #ddd; padding: 8px;">{valeur}</td>
-        </tr>
-        """
+        lignes_tableau += f"<tr><td style='border:1px solid #ddd;padding:8px;'><b>{cle}</b></td><td style='border:1px solid #ddd;padding:8px;'>{valeur}</td></tr>"
 
     html = f"""
     <html>
     <body>
-        <h2>Récapitulatif des réponses</h2>
-        <p>Un nouveau participant a terminé l'étude. Voici ses données :</p>
-        <table style="border-collapse: collapse; width: 100%; font-family: sans-serif;">
-            <thead>
-                <tr style="background-color: #4CAF50; color: white;">
-                    <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Variable</th>
-                    <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Valeur</th>
-                </tr>
-            </thead>
-            <tbody>
-                {lignes_tableau}
-            </tbody>
+        <h3>Récapitulatif des réponses (Vue rapide) :</h3>
+        <table style="border-collapse: collapse; width: 100%;">
+            <tr style="background-color: #4CAF50; color: white;">
+                <th style="border:1px solid #ddd;padding:12px;">Variable</th>
+                <th style="border:1px solid #ddd;padding:12px;">Valeur</th>
+            </tr>
+            {lignes_tableau}
         </table>
-        <br>
-        <p><i>Cet email a été généré automatiquement par votre application Streamlit.</i></p>
+        <p><i>Le fichier CSV est également joint à ce mail pour votre base de données.</i></p>
     </body>
     </html>
     """
-    
     msg.attach(MIMEText(html, 'html'))
 
-    # Connexion sécurisée et envoi
+    # 3. Création et Ajout de la pièce jointe CSV
+    # On transforme le dictionnaire en DataFrame puis en CSV
+    df = pd.DataFrame([donnees])
+    csv_buffer = io.StringIO()
+    df.to_csv(csv_buffer, index=False)
+    
+    part = MIMEBase('application', 'octet-stream')
+    part.set_payload(csv_buffer.getvalue().encode('utf-8'))
+    encoders.encode_base64(part)
+    part.add_header('Content-Disposition', f"attachment; filename=resultat_{donnees.get('Nom', 'etude')}.csv")
+    msg.attach(part)
+
+    # 4. Envoi sécurisé
     server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
     server.login(expediteur, mot_de_passe)
     server.sendmail(expediteur, destinataire, msg.as_string())
