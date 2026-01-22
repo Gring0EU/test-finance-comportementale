@@ -27,12 +27,9 @@ with tabs[0]:
     st.session_state.user_data['Nationalite'] = st.text_input("Nationalité")
     st.session_state.user_data['Age'] = st.number_input("Âge", 18, 99, 25)
     
-    # Ajout d'une explication simple via le paramètre help
-    st.session_state.user_data['TF'] = st.slider(
-        "Transactions / an", 
-        0, 250, 10,
-        help="Indiquez ici le nombre total d'achats et de ventes que vous réalisez en moyenne sur une année. Cela nous permet de connaître votre niveau d'activité sur les marchés."
-    )
+ # Champ TF avec explication visible
+    st.session_state.user_data['TF'] = st.slider("Transactions / an", 0, 250, 10)
+    st.caption("📌 **Qu'est-ce que c'est ?** Il s'agit du nombre total d'achats et de ventes que vous effectuez par an. Cela nous aide à définir si vous êtes un investisseur passif ou actif.")
 # --- TAB 2 : BISECTION AVANCÉE ---
 with tabs[1]:
     # 1. GESTION DES RÈGLES
