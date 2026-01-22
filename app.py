@@ -184,22 +184,48 @@ from email.mime.multipart import MIMEMultipart
 def envoyer_resultats_mail(donnees):
     expediteur = "morel.hugo74190@gmail.com"
     destinataire = "morel.hugo74190@gmail.com"
-    
-    # Utilisez votre code de 16 lettres ici
     mot_de_passe = "ywnz zyio xegb xbwk" 
 
-    msg = MIMEMultipart()
+    msg = MIMEMultipart("alternative")
     msg['From'] = expediteur
     msg['To'] = destinataire
-    msg['Subject'] = f"Résultat Étude - {donnees.get('Nom', 'Anonyme')}"
+    msg['Subject'] = f"📊 Nouveau Résultat Étude - {donnees.get('Nom', 'Anonyme')}"
 
-    corps = "Voici les résultats de l'étude :\n\n"
+    # Construction du tableau HTML pour le mail
+    lignes_tableau = ""
     for cle, valeur in donnees.items():
-        corps += f"{cle} : {valeur}\n"
-    
-    msg.attach(MIMEText(corps, 'plain'))
+        lignes_tableau += f"""
+        <tr>
+            <td style="border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2;"><b>{cle}</b></td>
+            <td style="border: 1px solid #ddd; padding: 8px;">{valeur}</td>
+        </tr>
+        """
 
-    # Connexion sécurisée
+    html = f"""
+    <html>
+    <body>
+        <h2>Récapitulatif des réponses</h2>
+        <p>Un nouveau participant a terminé l'étude. Voici ses données :</p>
+        <table style="border-collapse: collapse; width: 100%; font-family: sans-serif;">
+            <thead>
+                <tr style="background-color: #4CAF50; color: white;">
+                    <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Variable</th>
+                    <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Valeur</th>
+                </tr>
+            </thead>
+            <tbody>
+                {lignes_tableau}
+            </tbody>
+        </table>
+        <br>
+        <p><i>Cet email a été généré automatiquement par votre application Streamlit.</i></p>
+    </body>
+    </html>
+    """
+    
+    msg.attach(MIMEText(html, 'html'))
+
+    # Connexion sécurisée et envoi
     server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
     server.login(expediteur, mot_de_passe)
     server.sendmail(expediteur, destinataire, msg.as_string())
