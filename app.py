@@ -26,9 +26,13 @@ with tabs[0]:
     st.session_state.user_data['Genre'] = st.selectbox("Genre", ["Masculin", "Féminin", "Autre"])
     st.session_state.user_data['Nationalite'] = st.text_input("Nationalité")
     st.session_state.user_data['Age'] = st.number_input("Âge", 18, 99, 25)
-    st.session_state.user_data['TF'] = st.slider("Transactions/an", 0, 250, 10)
-
-        st.info("Le nombre de transactions par an nous aide à comprendre votre style d'investissement")
+    
+    # Ajout d'une explication simple via le paramètre help
+    st.session_state.user_data['TF'] = st.slider(
+        "Transactions / an", 
+        0, 250, 10,
+        help="Indiquez ici le nombre total d'achats et de ventes que vous réalisez en moyenne sur une année. Cela nous permet de connaître votre niveau d'activité sur les marchés."
+    )
 # --- TAB 2 : BISECTION AVANCÉE ---
 with tabs[1]:
     # 1. GESTION DES RÈGLES
