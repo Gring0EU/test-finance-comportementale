@@ -27,6 +27,8 @@ with tabs[0]:
     st.session_state.user_data['Nationalite'] = st.text_input("Nationalité")
     st.session_state.user_data['Age'] = st.number_input("Âge", 18, 99, 25)
     st.session_state.user_data['TF'] = st.slider("Transactions/an", 0, 250, 10)
+
+        st.info("Le nombre de transactions par an nous aide à comprendre votre style d'investissement")
 # --- TAB 2 : BISECTION AVANCÉE ---
 with tabs[1]:
     # 1. GESTION DES RÈGLES
